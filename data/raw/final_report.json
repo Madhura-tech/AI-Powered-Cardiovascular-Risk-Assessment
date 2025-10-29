@@ -1,0 +1,11 @@
+{
+  "accuracy_at_0.5": 0.824390243902439,
+  "roc_auc": 0.9345714285714286,
+  "precision": 0.776,
+  "recall": 0.9238095238095239,
+  "f1": 0.8434782608695652,
+  "brier_score": 0.10951134578999895,
+  "best_threshold": 0.59,
+  "best_accuracy": 0.8780487804878049,
+  "meets_85pct_accuracy": true
+}
