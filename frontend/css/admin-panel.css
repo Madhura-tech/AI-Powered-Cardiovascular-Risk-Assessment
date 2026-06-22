@@ -1,0 +1,151 @@
+/* Admin Panel Styles */
+.admin-stat-card {
+    background: rgba(244, 114, 182, 0.1);
+    border: 1px solid rgba(244, 114, 182, 0.3);
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+.admin-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(236, 72, 153, 0.2);
+}
+.admin-stat-card .stat-icon {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.4rem;
+    color: white;
+}
+.admin-stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #831843;
+}
+.admin-stat-card .stat-label {
+    color: #9d174d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #831843;
+}
+.admin-table th {
+    background: rgba(236, 72, 153, 0.1);
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #be185d;
+    border-bottom: 2px solid rgba(236, 72, 153, 0.2);
+}
+.admin-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.1);
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+.admin-table tr:hover td {
+    background: rgba(236, 72, 153, 0.04);
+}
+
+.admin-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+.admin-badge.admin { background: #ec4899; color: white; }
+.admin-badge.patient { background: rgba(236, 72, 153, 0.15); color: #831843; }
+.admin-badge.verified { background: rgba(16, 185, 129, 0.15); color: #065f46; }
+.admin-badge.unverified { background: rgba(239, 68, 68, 0.15); color: #991b1b; }
+.admin-badge.high { background: rgba(239, 68, 68, 0.15); color: #991b1b; }
+.admin-badge.moderate { background: rgba(245, 158, 11, 0.15); color: #92400e; }
+.admin-badge.low { background: rgba(16, 185, 129, 0.15); color: #065f46; }
+
+.admin-btn {
+    padding: 0.35rem 0.85rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.admin-btn:hover { transform: translateY(-1px); }
+.admin-btn.edit { background: rgba(99, 102, 241, 0.15); color: #4338ca; }
+.admin-btn.edit:hover { background: #6366f1; color: white; }
+.admin-btn.delete { background: rgba(239, 68, 68, 0.15); color: #991b1b; }
+.admin-btn.delete:hover { background: #ef4444; color: white; }
+.admin-btn.verify { background: rgba(16, 185, 129, 0.15); color: #065f46; }
+.admin-btn.verify:hover { background: #10b981; color: white; }
+
+.admin-tab-btn {
+    padding: 0.6rem 1.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    background: transparent;
+    color: #9d174d;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+.admin-tab-btn.active,
+.admin-tab-btn:hover {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    color: white;
+    border-color: transparent;
+}
+
+.admin-pagination button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    background: transparent;
+    color: #831843;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 2px;
+}
+.admin-pagination button.active,
+.admin-pagination button:hover {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    color: white;
+    border-color: transparent;
+}
+.admin-pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.health-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: rgba(244, 114, 182, 0.08);
+    border: 1px solid rgba(244, 114, 182, 0.2);
+    border-radius: 15px;
+    margin-bottom: 0.75rem;
+}
+.health-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.health-dot.green { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.5); }
+.health-dot.red { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }

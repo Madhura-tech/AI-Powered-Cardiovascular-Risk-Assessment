@@ -1,4 +1,4 @@
-from flask import request, send_file, jsonify
+from flask import request, send_file, jsonify, make_response, Response
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from app import db
@@ -202,7 +202,6 @@ class PredictionExport(Resource):
                 continue
         
         # Create response
-        from flask import Response
         return Response(
             csv_content,
             mimetype='text/csv',

@@ -79,27 +79,8 @@ async function uploadFiles() {
         
         // Temporary workaround - simulate successful upload for demo
         if (error.message.includes('Failed to fetch')) {
-            showNotification('Document upload feature requires backend server. Showing demo data instead.', 'info');
-            
-            // Show mock extracted data
-            const mockData = {
-                age: 45,
-                sex: 1,
-                cp: 1,
-                trestbps: 140,
-                chol: 240,
-                fbs: 0,
-                restecg: 1,
-                thalach: 150,
-                exang: 0,
-                oldpeak: 1.2,
-                slope: 1,
-                ca: 1,
-                thal: 2
-            };
-            
-            extractedMedicalData = mockData;
-            displayExtractedData(mockData);
+            showNotification('Backend server not available. Please start the backend server to upload documents.', 'error');
+            return;
         } else {
             showNotification('Network error. Please try again.', 'error');
         }
@@ -143,13 +124,8 @@ async function getDocumentDetails(documentId) {
                     extractedData = extractMedicalParameters(ocrText);
                     console.log('Extracted from OCR text:', extractedData);
                 } else {
-                    // Last resort: use default clinical values (not random)
-                    extractedData = {
-                        age: 58, sex: 1, cp: 0, trestbps: 150, chol: 245,
-                        fbs: 1, restecg: 1, thalach: 138, exang: 1,
-                        oldpeak: 2.3, slope: 1, ca: 1, thal: 3
-                    };
-                    console.log('Using default clinical values:', extractedData);
+                    showNotification('No medical data could be extracted from this document. Please try a different document with clearer text.', 'error');
+                    return;
                 }
             }
             
@@ -689,115 +665,72 @@ function extractDirectFromReport(text, data) {
 }
 
 function extractHardcodedValues(text, data) {
-    // Check for known clinical parameter formats
-    if (text.includes('clinical parameters') || text.includes('parameter') || text.includes('age')) {
-        console.log('Detected clinical parameters format - using hardcoded extraction');
-        
-        // Image 1: 54 years, Female
-        if (text.includes('54') && text.includes('female')) {
-            Object.assign(data, {
-                age: 54, sex: 0, cp: 1, trestbps: 135, chol: 215,
-                fbs: 0, restecg: 0, thalach: 148, exang: 0,
-                oldpeak: 1.0, slope: 2, ca: 0, thal: 2
-            });
-            console.log('✓ Extracted Image 1 data (54F)');
-            return true;
-        }
-        
-        // Image 2: 45 years
-        if (text.includes('45')) {
-            Object.assign(data, {
-                age: 45, sex: 1, cp: 2, trestbps: 130, chol: 250,
-                fbs: 1, restecg: 0, thalach: 150, exang: 0,
-                oldpeak: 1.2, slope: 1, ca: 0, thal: 3
-            });
-            console.log('✓ Extracted Image 2 data (45M)');
-            return true;
-        }
-        
-        // Image 3: 58 years or BP 145 + Chol 310
-        if (text.includes('58') || (text.includes('145') && text.includes('310'))) {
-            Object.assign(data, {
-                age: 58, sex: 0, cp: 1, trestbps: 145, chol: 310,
-                fbs: 1, restecg: 2, thalach: 120, exang: 1,
-                oldpeak: 2.5, slope: 2, ca: 2, thal: 2
-            });
-            console.log('✓ Extracted Image 3 data (58F, BP:145, Chol:310)');
-            return true;
-        }
-        
-        // Fallback for any clinical table
-        Object.assign(data, {
-            age: 58, sex: 0, cp: 1, trestbps: 145, chol: 310,
-            fbs: 1, restecg: 2, thalach: 120, exang: 1,
-            oldpeak: 2.5, slope: 2, ca: 2, thal: 2
-        });
-        console.log('✓ Used clinical table extraction');
-        return true;
-    }
-    
+    // REMOVED: No more hardcoded demo values
     return false;
 }
 
 function displayExtractedData(data) {
+    console.log('[DISPLAY] Showing extracted data:', data);
     const previewDiv = document.getElementById('extractedDataPreview');
     const contentDiv = document.getElementById('extractedDataContent');
     
     if (!previewDiv || !contentDiv) return;
     
-    const extractedCount = 13; // Force show all as extracted
-    const totalFields = Object.keys(data).length;
+    const extractedCount = Object.values(data).filter(v => v !== null && v !== undefined).length;
+    const totalFields = 13;
     
-    // Enhanced display with better formatting and all parameters
+    const formatValue = (val, type) => {
+        if (val === null || val === undefined) return '<em class="text-muted">Not found</em>';
+        if (type === 'sex') return val === 1 ? 'Male' : 'Female';
+        if (type === 'cp') return ['Typical Angina', 'Atypical Angina', 'Non-anginal', 'Asymptomatic'][val] || val;
+        if (type === 'fbs') return val === 1 ? '>120 mg/dl' : '≤120 mg/dl';
+        if (type === 'restecg') return ['Normal', 'ST-T abnormality', 'LV hypertrophy'][val] || val;
+        if (type === 'exang') return val === 1 ? 'Yes' : 'No';
+        if (type === 'slope') return ['Downsloping', 'Flat', 'Upsloping'][val] || val;
+        if (type === 'thal') return ['', 'Fixed Defect', 'Normal', 'Reversible Defect'][val] || val;
+        return val;
+    };
+    
     const dataHTML = `
-        <div class="alert alert-primary mb-3">
-            <h6 class="mb-2"><i class="fas fa-eye"></i> Medical Data Extracted from Document</h6>
-            <p class="mb-0">Successfully extracted ${extractedCount} out of ${totalFields} parameters from document!</p>
+        <div class="alert alert-${extractedCount >= 10 ? 'success' : extractedCount >= 5 ? 'warning' : 'info'} mb-3">
+            <h6 class="mb-2"><i class="fas fa-eye"></i> OCR Extraction Results</h6>
+            <p class="mb-0">Found ${extractedCount} out of ${totalFields} parameters</p>
         </div>
         <div class="row">
             <div class="col-md-8">
-                <h6>All Medical Parameters:</h6>
                 <div class="row">
                     <div class="col-md-6">
                         <ul class="list-unstyled">
-                            <li><strong>Age:</strong> <span class="text-success fw-bold">${data.age} years</span></li>
-                            <li><strong>Sex:</strong> <span class="text-success fw-bold">${data.sex === 1 ? 'Male' : 'Female'}</span></li>
-                            <li><strong>Chest Pain:</strong> <span class="text-success fw-bold">${['Typical Angina', 'Atypical Angina', 'Non-anginal', 'Asymptomatic'][data.cp]}</span></li>
-                            <li><strong>Blood Pressure:</strong> <span class="text-success fw-bold">${data.trestbps} mmHg</span></li>
-                            <li><strong>Cholesterol:</strong> <span class="text-success fw-bold">${data.chol} mg/dl</span></li>
-                            <li><strong>Fasting Blood Sugar:</strong> <span class="text-success fw-bold">${data.fbs === 1 ? '>120 mg/dl' : '≤120 mg/dl'}</span></li>
-                            <li><strong>Resting ECG:</strong> <span class="text-success fw-bold">${['Normal', 'ST-T abnormality', 'LV hypertrophy'][data.restecg]}</span></li>
+                            <li><strong>Age:</strong> ${formatValue(data.age)} ${data.age ? 'years' : ''}</li>
+                            <li><strong>Sex:</strong> ${formatValue(data.sex, 'sex')}</li>
+                            <li><strong>Chest Pain:</strong> ${formatValue(data.cp, 'cp')}</li>
+                            <li><strong>Blood Pressure:</strong> ${formatValue(data.trestbps)} ${data.trestbps ? 'mmHg' : ''}</li>
+                            <li><strong>Cholesterol:</strong> ${formatValue(data.chol)} ${data.chol ? 'mg/dl' : ''}</li>
+                            <li><strong>Fasting Blood Sugar:</strong> ${formatValue(data.fbs, 'fbs')}</li>
+                            <li><strong>Resting ECG:</strong> ${formatValue(data.restecg, 'restecg')}</li>
                         </ul>
                     </div>
                     <div class="col-md-6">
                         <ul class="list-unstyled">
-                            <li><strong>Max Heart Rate:</strong> <span class="text-success fw-bold">${data.thalach} bpm</span></li>
-                            <li><strong>Exercise Angina:</strong> <span class="text-success fw-bold">${data.exang === 1 ? 'Yes' : 'No'}</span></li>
-                            <li><strong>ST Depression:</strong> <span class="text-success fw-bold">${data.oldpeak}</span></li>
-                            <li><strong>ST Slope:</strong> <span class="text-success fw-bold">${['Downsloping', 'Flat', 'Upsloping'][data.slope]}</span></li>
-                            <li><strong>Major Vessels:</strong> <span class="text-success fw-bold">${data.ca} vessels</span></li>
-                            <li><strong>Thalassemia:</strong> <span class="text-success fw-bold">${['', 'Fixed Defect', 'Normal', 'Reversible Defect'][data.thal]}</span></li>
+                            <li><strong>Max Heart Rate:</strong> ${formatValue(data.thalach)} ${data.thalach ? 'bpm' : ''}</li>
+                            <li><strong>Exercise Angina:</strong> ${formatValue(data.exang, 'exang')}</li>
+                            <li><strong>ST Depression:</strong> ${formatValue(data.oldpeak)}</li>
+                            <li><strong>ST Slope:</strong> ${formatValue(data.slope, 'slope')}</li>
+                            <li><strong>Major Vessels:</strong> ${formatValue(data.ca)} ${data.ca !== null ? 'vessels' : ''}</li>
+                            <li><strong>Thalassemia:</strong> ${formatValue(data.thal, 'thal')}</li>
                         </ul>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card border-success">
+                <div class="card border-${extractedCount >= 10 ? 'success' : 'warning'}">
                     <div class="card-body text-center">
-                        <h4 class="text-success">${extractedCount}/${totalFields}</h4>
-                        <p class="mb-2">Parameters Extracted</p>
+                        <h4>${extractedCount}/${totalFields}</h4>
+                        <p class="mb-2">Parameters Found</p>
                         <div class="progress mb-2">
-                            <div class="progress-bar bg-success" style="width: ${(extractedCount/totalFields)*100}%"></div>
+                            <div class="progress-bar bg-${extractedCount >= 10 ? 'success' : 'warning'}" style="width: ${(extractedCount/totalFields)*100}%"></div>
                         </div>
-                        <small class="text-success">All parameters extracted!</small>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="alert alert-success">
-                        <small><i class="fas fa-check-circle"></i> <strong>Extraction Complete:</strong> All 13 parameters ready for heart disease prediction</small>
-                    </div>
-                    <div class="alert alert-info">
-                        <small><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> For better extraction, use clear, high-resolution medical documents with readable text</small>
+                        <small>${extractedCount >= 10 ? 'Excellent extraction!' : extractedCount >= 5 ? 'Partial extraction' : 'Limited data found'}</small>
                     </div>
                 </div>
             </div>
@@ -807,13 +740,9 @@ function displayExtractedData(data) {
     contentDiv.innerHTML = dataHTML;
     previewDiv.classList.remove('d-none');
     previewDiv.style.display = 'block';
-    
-    // Store the data globally for form filling
     window.currentExtractedData = data;
     
-    setTimeout(() => {
-        previewDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+    setTimeout(() => previewDiv.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
 }
 
 function useExtractedData() {
@@ -822,13 +751,16 @@ function useExtractedData() {
         return;
     }
     
+    // Fill missing fields with defaults
+    const completeData = fillMissingDefaults(extractedMedicalData);
+    
     // Navigate to prediction form
     navigateTo('predict');
     
-    // Fill form with extracted data
+    // Fill form with complete data
     setTimeout(() => {
-        fillPredictionForm(extractedMedicalData);
-        showNotification('Form filled with extracted data! You can now submit for prediction.', 'success');
+        fillPredictionForm(completeData);
+        showNotification('Form filled with extracted data! Missing fields filled with defaults.', 'success');
     }, 500);
 }
 

@@ -1,0 +1,45 @@
+/* SIMPLE FIX: Hide sidebar when on welcome/login/register */
+.sidebar {
+  display: none !important;
+}
+
+.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+/* Show sidebar only when logged in */
+body.logged-in .sidebar {
+  display: flex !important;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  z-index: 999;
+}
+
+body.logged-in .main-content {
+  margin-left: 240px !important;
+  width: calc(100% - 240px) !important;
+  padding: 2rem !important;
+}
+.hero-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 4rem;
+
+  max-width: 1600px;
+  margin: 0 auto;
+
+  padding-left: clamp(1rem, 4vw, 3rem);
+  padding-right: clamp(1rem, 4vw, 3rem);
+
+  box-sizing: border-box;
+}
+.hero-content,
+.hero-visual {
+  padding: 2rem;
+}

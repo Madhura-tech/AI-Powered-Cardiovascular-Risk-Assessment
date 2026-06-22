@@ -1,0 +1,23 @@
+/* Landing Page Layout Fix */
+body.landing-page .sidebar {
+    display: none !important;
+}
+
+body.landing-page .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+body.landing-page #welcome {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem;
+    box-sizing: border-box;
+}
+
+body.landing-page #welcome .hero-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}

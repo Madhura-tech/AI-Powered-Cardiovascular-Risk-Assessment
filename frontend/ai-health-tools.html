@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Health Tools - MedPredict</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .detail-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899, #be185d);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .result-box {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .symptom-btn {
+            margin: 0.3rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 2px solid #ec4899;
+            background: white;
+            color: #ec4899;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .symptom-btn.active {
+            background: #ec4899;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 1400px;">
+        <div class="text-center mb-5">
+            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4); animation: heartbeat 2s ease-in-out infinite;">
+                <i class="fas fa-robot" style="font-size: 3rem; color: white;"></i>
+            </div>
+            <h1 style="color: #831843; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #ec4899, #be185d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">AI Health Tools</h1>
+            <p style="color: #9d174d; font-size: 1.2rem;">Advanced AI assistance for your health journey</p>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.1); margin-bottom: 2rem;">
+            <h3 style="color: #831843; margin-bottom: 2rem; text-align: center; font-weight: 700;">Quick Actions</h3>
+            <div class="row mb-4">
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="showTool('symptom')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(99, 102, 241, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);">
+                            <i class="fas fa-stethoscope" style="font-size: 1.5rem; color: white;"></i>
+                        </div>
+                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Symptom Checker</h5>
+                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Analyze your symptoms</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="showTool('coach')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(16, 185, 129, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-user-md" style="font-size: 1.5rem; color: white;"></i>
+                        </div>
+                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Health Coach</h5>
+                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Personalized health plans</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1)); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="showTool('risk')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(6, 182, 212, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);">
+                            <i class="fas fa-calculator" style="font-size: 1.5rem; color: white;"></i>
+                        </div>
+                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Risk Calculator</h5>
+                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Calculate cardiovascular risk</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="showTool('nutrition')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(245, 158, 11, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);">
+                            <i class="fas fa-apple-alt" style="font-size: 1.5rem; color: white;"></i>
+                        </div>
+                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Nutrition Advisor</h5>
+                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Get personalized meal plans</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool Details -->
+        <div id="toolDetails" style="display: none;">
+            <!-- Symptom Checker -->
+            <div id="symptomTool" class="detail-card" style="display: none;">
+                <h3 style="color: #831843;">AI Symptom Checker</h3>
+                <label style="color: #831843; font-weight: 600; margin-bottom: 1rem;">Select your symptoms:</label>
+                <div id="symptomButtons">
+                    <button class="symptom-btn" data-symptom="chest_pain">Chest Pain</button>
+                    <button class="symptom-btn" data-symptom="shortness_of_breath">Shortness of Breath</button>
+                    <button class="symptom-btn" data-symptom="irregular_heartbeat">Irregular Heartbeat</button>
+                    <button class="symptom-btn" data-symptom="fatigue">Fatigue</button>
+                    <button class="symptom-btn" data-symptom="dizziness">Dizziness</button>
+                    <button class="symptom-btn" data-symptom="nausea">Nausea</button>
+                    <button class="symptom-btn" data-symptom="headache">Headache</button>
+                    <button class="symptom-btn" data-symptom="sweating">Excessive Sweating</button>
+                </div>
+                <button class="btn btn-primary mt-3" onclick="analyzeSymptoms()">Analyze Symptoms</button>
+                <div id="symptomResult"></div>
+            </div>
+
+            <!-- Health Coach -->
+            <div id="coachTool" class="detail-card" style="display: none;">
+                <h3 style="color: #831843;">AI Health Coach</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Age</label>
+                        <input type="number" id="coachAge" class="form-control" value="35">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">BMI</label>
+                        <input type="number" id="coachBMI" class="form-control" value="24" step="0.1">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Activity Level</label>
+                        <select id="coachActivity" class="form-control">
+                            <option value="low">Low</option>
+                            <option value="moderate" selected>Moderate</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="getHealthCoaching()">Get Personalized Plan</button>
+                <div id="coachResult"></div>
+            </div>
+
+            <!-- Risk Calculator -->
+            <div id="riskTool" class="detail-card" style="display: none;">
+                <h3 style="color: #831843;">AI Risk Calculator</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Age</label>
+                        <input type="number" id="riskAge" class="form-control" value="45">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Cholesterol (mg/dL)</label>
+                        <input type="number" id="riskChol" class="form-control" value="200">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Blood Pressure</label>
+                        <input type="number" id="riskBP" class="form-control" value="120">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="riskSmoking">
+                            <label class="form-check-label" style="color: #831843;">Smoking</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="riskDiabetes">
+                            <label class="form-check-label" style="color: #831843;">Diabetes</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="riskFamily">
+                            <label class="form-check-label" style="color: #831843;">Family History</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="calculateRisk()">Calculate Risk</button>
+                <div id="riskResult"></div>
+            </div>
+
+            <!-- Nutrition Advisor -->
+            <div id="nutritionTool" class="detail-card" style="display: none;">
+                <h3 style="color: #831843;">AI Nutrition Advisor</h3>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Age</label>
+                        <input type="number" id="nutritionAge" class="form-control" value="30">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Weight (kg)</label>
+                        <input type="number" id="nutritionWeight" class="form-control" value="70">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Height (cm)</label>
+                        <input type="number" id="nutritionHeight" class="form-control" value="170">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label style="color: #831843; font-weight: 600;">Goal</label>
+                        <select id="nutritionGoal" class="form-control">
+                            <option value="lose">Lose Weight</option>
+                            <option value="maintain" selected>Maintain</option>
+                            <option value="gain">Gain Weight</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="getNutritionPlan()">Get Nutrition Plan</button>
+                <div id="nutritionResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:5000/api/ai-tools';
+        const token = localStorage.getItem('authToken');
+
+        function showTool(tool) {
+            document.getElementById('toolDetails').style.display = 'block';
+            document.querySelectorAll('.detail-card').forEach(el => el.style.display = 'none');
+            document.getElementById(tool + 'Tool').style.display = 'block';
+            document.getElementById(tool + 'Tool').scrollIntoView({behavior: 'smooth'});
+        }
+
+        document.querySelectorAll('.symptom-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        });
+
+        async function analyzeSymptoms() {
+            const selectedSymptoms = Array.from(document.querySelectorAll('.symptom-btn.active')).map(btn => btn.dataset.symptom);
+            if (selectedSymptoms.length === 0) {
+                alert('Please select at least one symptom');
+                return;
+            }
+            const response = await fetch(`${API_URL}/symptom-checker`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                body: JSON.stringify({ symptoms: selectedSymptoms })
+            });
+            const data = await response.json();
+            let html = `<div class="result-box"><h5 style="color: #831843;">Analysis Results</h5><p><strong>Risk Score:</strong> ${data.risk_score}/100</p><p><strong>Urgency:</strong> <span style="color: ${data.urgency === 'High' ? '#ef4444' : data.urgency === 'Moderate' ? '#f59e0b' : '#10b981'}">${data.urgency}</span></p><h6 style="color: #831843; margin-top: 1rem;">Possible Conditions:</h6><ul>`;
+            data.conditions.forEach(c => { html += `<li>${c.name} - ${c.probability}% probability (${c.severity} severity)</li>`; });
+            html += `</ul><h6 style="color: #831843;">Recommendations:</h6><ul>`;
+            data.recommendations.forEach(r => { html += `<li>${r}</li>`; });
+            html += `</ul></div>`;
+            document.getElementById('symptomResult').innerHTML = html;
+        }
+
+        async function getHealthCoaching() {
+            const userData = {age: parseInt(document.getElementById('coachAge').value), bmi: parseFloat(document.getElementById('coachBMI').value), activity_level: document.getElementById('coachActivity').value};
+            const response = await fetch(`${API_URL}/health-coach`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ user_data: userData })});
+            const data = await response.json();
+            let html = `<div class="result-box"><h5 style="color: #831843;">Your Personalized Health Plan</h5><h6 style="color: #831843; margin-top: 1rem;">Diet Plan:</h6><ul>${data.personalized_plan.diet.map(d => `<li>${d}</li>`).join('')}</ul><h6 style="color: #831843;">Exercise Plan:</h6><ul>${data.personalized_plan.exercise.map(e => `<li>${e}</li>`).join('')}</ul><h6 style="color: #831843;">Lifestyle Tips:</h6><ul>${data.personalized_plan.lifestyle.map(l => `<li>${l}</li>`).join('')}</ul><div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;"><strong style="color: #10b981;">💪 ${data.motivation}</strong></div></div>`;
+            document.getElementById('coachResult').innerHTML = html;
+        }
+
+        async function calculateRisk() {
+            const riskData = {age: parseInt(document.getElementById('riskAge').value), cholesterol: parseInt(document.getElementById('riskChol').value), blood_pressure: parseInt(document.getElementById('riskBP').value), smoking: document.getElementById('riskSmoking').checked, diabetes: document.getElementById('riskDiabetes').checked, family_history: document.getElementById('riskFamily').checked};
+            const response = await fetch(`${API_URL}/risk-calculator`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify(riskData)});
+            const data = await response.json();
+            const color = data.risk_category === 'High' ? '#ef4444' : data.risk_category === 'Moderate' ? '#f59e0b' : '#10b981';
+            let html = `<div class="result-box"><h5 style="color: #831843;">10-Year Cardiovascular Risk</h5><div style="text-align: center; margin: 2rem 0;"><div style="font-size: 3rem; font-weight: 800; color: ${color};">${data.ten_year_risk}%</div><div style="font-size: 1.2rem; color: ${color}; font-weight: 600;">${data.risk_category} Risk</div></div><h6 style="color: #831843;">Recommendations:</h6><ul>${data.recommendations.map(r => `<li>${r}</li>`).join('')}</ul></div>`;
+            document.getElementById('riskResult').innerHTML = html;
+        }
+
+        async function getNutritionPlan() {
+            const nutritionData = {age: parseInt(document.getElementById('nutritionAge').value), weight: parseFloat(document.getElementById('nutritionWeight').value), height: parseFloat(document.getElementById('nutritionHeight').value), goal: document.getElementById('nutritionGoal').value, activity_level: 'moderate'};
+            const response = await fetch(`${API_URL}/nutrition-advisor`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify(nutritionData)});
+            const data = await response.json();
+            let html = `<div class="result-box"><h5 style="color: #831843;">Your Personalized Nutrition Plan</h5><div style="background: rgba(236, 72, 153, 0.1); padding: 1rem; border-radius: 10px; margin: 1rem 0;"><strong>BMI: ${data.bmi}</strong> - ${data.bmi_category}</div><h6 style="color: #831843;">Daily Nutrition Targets:</h6><ul><li>Calories: ${data.daily_nutrition.calories} kcal</li><li>Protein: ${data.daily_nutrition.protein_g}g</li><li>Carbs: ${data.daily_nutrition.carbs_g}g</li><li>Fats: ${data.daily_nutrition.fats_g}g</li><li>Water: ${data.hydration}</li></ul><h6 style="color: #831843;">Sample Meal Plan:</h6><div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;"><div><strong>Breakfast:</strong><ul>${data.meal_plan.breakfast.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Lunch:</strong><ul>${data.meal_plan.lunch.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Dinner:</strong><ul>${data.meal_plan.dinner.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Snacks:</strong><ul>${data.meal_plan.snacks.map(m => `<li>${m}</li>`).join('')}</ul></div></div><h6 style="color: #831843; margin-top: 1rem;">Recommended Supplements:</h6><ul>${data.supplements.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
+            document.getElementById('nutritionResult').innerHTML = html;
+        }
+
+        if (!token) {
+            alert('Please login to use AI Health Tools');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

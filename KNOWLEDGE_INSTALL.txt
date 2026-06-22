@@ -1,0 +1,51 @@
+KNOWLEDGE HUB INSTALLATION INSTRUCTIONS
+========================================
+
+STEP 1: Add CSS Link
+---------------------
+Open: frontend/index.html
+Find line 15 (after viewport-fix.css):
+    <link href="css/viewport-fix.css" rel="stylesheet">
+
+ADD THIS LINE AFTER IT:
+    <link href="css/knowledge.css" rel="stylesheet">
+
+
+STEP 2: Add Sidebar Link
+-------------------------
+Open: frontend/index.html
+Find line 75 (the Analytics sidebar link):
+            <a href="#analytics" class="sidebar-link" onclick="navigateTo('analytics')">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+
+ADD THIS AFTER IT:
+            <a href="#knowledge" class="sidebar-link" onclick="navigateTo('knowledge')">
+                <i class="fas fa-book-open"></i>
+                <span>Knowledge</span>
+            </a>
+
+
+STEP 3: Add Knowledge Section
+------------------------------
+Open: frontend/index.html
+Find line 1960 (end of Analytics section - look for closing </div> after analytics)
+
+COPY THE ENTIRE CONTENT from frontend/knowledge.html
+PASTE IT AFTER the Analytics section closing </div>
+
+
+STEP 4: Add JavaScript
+-----------------------
+Open: frontend/index.html
+Find the BOTTOM of the file (before </body>)
+Look for lines with:
+    <script src="js/app_clean_fixed.js?v=2"></script>
+
+ADD THESE TWO LINES AFTER ALL OTHER SCRIPTS:
+    <script src="js/knowledge.js"></script>
+    <script src="js/analytics-charts-inline.js"></script>
+
+
+DONE! Refresh your browser and click "Knowledge" in the sidebar.

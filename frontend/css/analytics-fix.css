@@ -1,0 +1,12 @@
+#analytics {
+    padding: 2rem 3rem 2rem 2rem !important;
+}
+
+#analytics .row {
+    margin-right: 0 !important;
+    padding-right: 1rem;
+}
+
+#analytics .col-md-6 {
+    padding-right: 1.5rem !important;
+}

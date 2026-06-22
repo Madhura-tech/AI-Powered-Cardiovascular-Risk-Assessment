@@ -1,0 +1,11 @@
+{
+    "ok": false,
+    "stage": "rejected_not_heart",
+    "error": "not_heart_report",
+    "diagnostic": {
+        "score": 0,
+        "reason": "blacklist_match",
+        "matched": "doppler"
+    },
+    "text_preview": "<_                                                                                                                                         HOME SAMPLE COLLECTION\n@                                                       SPECIALIST CONSULTATIONS\n\nSPECIAL CORPORATE PROGRAM\n\nMULTISPECIALITY DENTAL CLINIC\n\nONSITE & INHOUSE HEALTH CHECKS\n\nMedi-healthcare\n\nNAME : MRS.                                             REF BY: DR. CHANDRAN A P    |\n\nAGE/SEX: 36 YRS / FEMALE                                DATE :04.01.2008\n\nM- MODE AND DOPPLER MEASUREMENTS\n\n(m.m)        (m.m)                  (cm/sec)\n\nAO :17.8        LVIDD : 42.9        ME EV : 120       AV: 58.4 | MR: Nil         MS: Nil\nLA : 28.3        LVIDS : 26.5            :                            AR: Nil         AS: Nil\nEPSSs:           WSD :87         PV: 98.9\n\nRVID : 20       VSS 312.7        TV Ev :71.1       Av: 48.6 | TR: Nil         TS: Nil\nLVPWD : 10.1\n\nLVPWS : 15.9\nEF: 69%\n\nDESCRIPTIVE FINDINGS\n\nLeft Ventricle            : NORMAL\n\nRi"
+}

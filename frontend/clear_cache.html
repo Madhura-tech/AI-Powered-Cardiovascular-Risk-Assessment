@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Cache</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <h1>Cache Cleared</h1>
+    <p>Click below to reload the app with fresh files:</p>
+    <button onclick="window.location.href='index.html?v=' + Date.now()">Open App (Fresh)</button>
+    
+    <script>
+        // Clear all caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+            });
+        }
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('All caches cleared!');
+    </script>
+</body>
+</html>

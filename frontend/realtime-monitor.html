@@ -1,0 +1,100 @@
+<!-- Real-time Health Monitoring Dashboard -->
+<div id="realtime-monitor" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto;">
+    
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4); animation: heartbeat 2s ease-in-out infinite;">
+            <i class="fas fa-heartbeat" style="font-size: 2.5rem; color: white;"></i>
+        </div>
+        <h2 style="color: #831843; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem;">Real-time Health Monitor</h2>
+        <p style="color: #9d174d; font-size: 1.1rem;">Live vitals tracking with AI-powered analysis</p>
+    </div>
+
+    <!-- Alerts Container -->
+    <div id="alerts-container" style="margin-bottom: 2rem;"></div>
+
+    <!-- Status Badge -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span id="rt-status" class="status-badge status-normal" style="padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 600; font-size: 1rem;">NORMAL</span>
+    </div>
+
+    <!-- Vitals Grid -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-heartbeat" style="font-size: 2rem; color: #ec4899; margin-bottom: 0.5rem;"></i>
+                <h3 id="rt-heart-rate" style="color: #831843; font-size: 2.5rem; font-weight: 700; margin: 0.5rem 0;">--</h3>
+                <p style="color: #9d174d; margin: 0;">Heart Rate (BPM)</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-tint" style="font-size: 2rem; color: #f472b6; margin-bottom: 0.5rem;"></i>
+                <h3 style="color: #831843; font-size: 2.5rem; font-weight: 700; margin: 0.5rem 0;">
+                    <span id="rt-bp-systolic">--</span>/<span id="rt-bp-diastolic">--</span>
+                </h3>
+                <p style="color: #9d174d; margin: 0;">Blood Pressure (mmHg)</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-lungs" style="font-size: 2rem; color: #be185d; margin-bottom: 0.5rem;"></i>
+                <h3 id="rt-oxygen" style="color: #831843; font-size: 2.5rem; font-weight: 700; margin: 0.5rem 0;">--</h3>
+                <p style="color: #9d174d; margin: 0;">Oxygen Level (%)</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-thermometer-half" style="font-size: 2rem; color: #ec4899; margin-bottom: 0.5rem;"></i>
+                <h3 id="rt-temperature" style="color: #831843; font-size: 2.5rem; font-weight: 700; margin: 0.5rem 0;">--</h3>
+                <p style="color: #9d174d; margin: 0;">Temperature (°C)</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-wind" style="font-size: 2rem; color: #f472b6; margin-bottom: 0.5rem;"></i>
+                <h3 id="rt-respiratory" style="color: #831843; font-size: 2.5rem; font-weight: 700; margin: 0.5rem 0;">--</h3>
+                <p style="color: #9d174d; margin: 0;">Respiratory Rate</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 1.5rem; text-align: center;">
+                <i class="fas fa-clock" style="font-size: 2rem; color: #be185d; margin-bottom: 0.5rem;"></i>
+                <h3 id="rt-timestamp" style="color: #831843; font-size: 1.2rem; font-weight: 600; margin: 0.5rem 0;">--:--:--</h3>
+                <p style="color: #9d174d; margin: 0;">Last Update</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 20px; padding: 2rem; margin-bottom: 2rem;">
+        <h4 style="color: #831843; margin-bottom: 1.5rem;">Heart Rate Trend</h4>
+        <canvas id="vitalsChart" height="100"></canvas>
+    </div>
+
+    <!-- Control Buttons -->
+    <div style="text-align: center;">
+        <button onclick="startSimulation()" class="btn" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; margin: 0.5rem;">
+            <i class="fas fa-play me-2"></i>Start Simulation
+        </button>
+    </div>
+</div>
+
+<style>
+.status-badge {
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+.status-normal {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+.status-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+.status-caution {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+</style>

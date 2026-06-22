@@ -2,3 +2,22 @@
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# VS Code settings
+.vscode/
+
+# Uploaded files
+backend/uploads/
+uploads/
+
+# Database files
+*.db
+backend/instance/*.db
+
+# Python cache
+__pycache__/
+*.pyc

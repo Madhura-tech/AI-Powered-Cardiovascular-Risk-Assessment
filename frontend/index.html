@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Health Predictor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
     <link href="css/fullwidth.css" rel="stylesheet">
+    <link href="css/chatbot.css" rel="stylesheet">
+    <link href="css/layout-fix.css" rel="stylesheet">
+    <link href="css/viewport-fix.css" rel="stylesheet">
+    <link href="css/analytics-fix.css" rel="stylesheet">
+    <link href="css/dark-mode.css" rel="stylesheet">
+    <link href="css/hospital-map.css" rel="stylesheet">
+    <link href="css/admin-panel.css" rel="stylesheet">
 </head>
 <body>
     <!-- Mobile Sidebar Toggle -->
@@ -59,13 +68,25 @@
                 <i class="fas fa-history"></i>
                 <span>History</span>
             </a>
-            <a href="#medical-report" class="sidebar-link d-none" id="medicalReportLink" onclick="navigateTo('medical-report')">
-                <i class="fas fa-file-medical-alt"></i>
-                <span>Medical Report</span>
+            <a href="#analytics" class="sidebar-link" onclick="navigateTo('analytics')">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
             </a>
             <a href="#profile" class="sidebar-link" onclick="navigateTo('profile')">
                 <i class="fas fa-user-cog"></i>
                 <span>Profile</span>
+            </a>
+            <a href="#nearby-hospitals" class="sidebar-link" onclick="navigateTo('nearby-hospitals')">
+                <i class="fas fa-hospital"></i>
+                <span>Nearby Hospitals</span>
+            </a>
+            <a href="#medical-report" class="sidebar-link d-none" id="medicalReportLink" onclick="navigateTo('medical-report')">
+                <i class="fas fa-file-medical-alt"></i>
+                <span>Medical Report</span>
+            </a>
+            <a href="#admin" class="sidebar-link d-none" id="adminLink" onclick="navigateTo('admin')">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin Panel</span>
             </a>
         </div>
         
@@ -80,15 +101,21 @@
                     </button>
                 </div>
             </div>
+            <button onclick="showChatbot()" style="width: 100%; margin-top: 1rem; background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem;">
+                <i class="fas fa-robot"></i> AI Assistant
+            </button>
+            <button onclick="toggleDarkMode()" style="width: 100%; margin-top: 0.5rem; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: #831843; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem;">
+                <i class="fas fa-moon" id="theme-icon"></i> <span id="theme-text">Dark Mode</span>
+            </button>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="main-content no-sidebar" id="mainContent" style="width: 100vw; margin: 0; padding: 0;">
+    <div class="main-content no-sidebar" id="mainContent" style="width: 100%; margin: 0; padding: 0;">
         <div style="width: 100%; margin: 0; padding: 0;">
             <div style="width: 100%; margin: 0; padding: 0;">
                 <!-- Welcome Section -->
-                <div id="welcome" class="content-section full-page-section" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); display: block !important; visibility: visible !important; opacity: 1 !important; height: 100vh !important; min-height: 100vh; overflow-y: auto !important; overflow-x: hidden !important; width: 100vw !important; max-width: none !important;">
+                <div id="welcome" class="content-section full-page-section" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); display: block !important; visibility: visible !important; opacity: 1 !important; height: 100vh !important; min-height: 100vh; overflow-y: auto !important; overflow-x: hidden !important; width: 100% !important; max-width: none !important;">
                     <!-- Floating Particles -->
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
                         <div style="position: absolute; top: 10%; left: 5%; width: 8px; height: 8px; background: #ec4899; border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
@@ -98,19 +125,20 @@
                         <div style="position: absolute; top: 30%; left: 15%; width: 4px; height: 4px; background: #f472b6; border-radius: 50%; animation: float 9s ease-in-out infinite 0.5s;"></div>
                     </div>
                     
-                    <div class="section-content" style="display: flex; flex-direction: column; margin: 0; padding: 0 5px; width: calc(100vw - 10px); max-width: none; overflow-x: hidden;">
-                        <div class="hero-section" style="max-width: 1600px; margin: 0 auto; padding: 2rem; width: 100%; box-sizing: border-box;">
+                    <div class="section-content" style="display: flex; flex-direction: column; margin: 0; padding: 0; width: 100%; max-width: none; overflow-x: hidden;">
+                        <div class="hero-section">
                         <div class="hero-content" style="max-width: 600px;">
-                            <div style="background: linear-gradient(135deg, #ec4899, #be185d); padding: 0.4rem 1.2rem; border-radius: 20px; display: inline-block; margin-bottom: 1.5rem; font-size: 0.8rem; font-weight: 600; color: white; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);">
+                            <div style="background: linear-gradient(135deg, #ec4899, #be185d); padding: 0.25rem 0.7rem; border-radius: 15px; display: inline-block; margin-bottom: 1.5rem; font-size: 0.8rem; font-weight: 600; color: white; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);">
                                 ❤️ Predict. Prevent. Protect.
                             </div>
                             <h1 style="font-size: 2.8rem; font-weight: 800; line-height: 1.2; margin-bottom: 1.5rem; background: linear-gradient(135deg, #ec4899, #be185d, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -1px;">AI-Powered Heart Disease Prediction</h1>
                             <p class="hero-subtitle" style="font-size: 1.1rem; color: #831843; margin-bottom: 2.5rem; line-height: 1.6; font-weight: 500;">Join <strong>10,000+</strong> users monitoring their heart health with advanced machine learning predictions and comprehensive health analytics.</p>
-                            <div class="hero-actions" style="display: flex; gap: 1.5rem; margin-bottom: 2rem; justify-content: flex-start;">
+                            <div class="hero-actions" style="display: flex; gap: 1.5rem; margin-bottom: 2rem; justify-content: flex-start; flex-wrap: wrap;">
                                 <button onclick="navigateTo('register')" class="btn btn-success btn-lg" style="background: linear-gradient(135deg, #10b981, #059669); border: none; padding: 1rem 1.8rem; border-radius: 12px; color: white; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); transition: all 0.3s ease; font-size: 1rem; position: relative; overflow: hidden; min-width: 160px; cursor: pointer;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 35px rgba(16, 185, 129, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(16, 185, 129, 0.4)'">
                                     <i class="fas fa-rocket"></i>
                                     Start Free Trial
                                 </button>
+
                                 <button onclick="navigateTo('login')" style="background: rgba(236, 72, 153, 0.1); border: 2px solid #ec4899; color: #be185d; padding: 1rem 1.8rem; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; transition: all 0.3s ease; font-size: 1rem; backdrop-filter: blur(10px); min-width: 130px; cursor: pointer;" onmouseover="this.style.background='#ec4899'; this.style.color='white'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(236, 72, 153, 0.1)'; this.style.color='#be185d'; this.style.transform='translateY(0)'">
                                     <i class="fas fa-sign-in-alt"></i>
                                     Sign In
@@ -127,8 +155,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="hero-visual" style="display: flex; justify-content: center; align-items: center;">
-                            <div style="width: 100%; max-width: 500px; height: 300px; background: linear-gradient(135deg, rgba(244, 114, 182, 0.1), rgba(236, 72, 153, 0.05)); border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden;">
+                        <div class="hero-visual">
+                            <div style="width: 100%; max-width: 600px; height: 300px; background: linear-gradient(135deg, rgba(244, 114, 182, 0.1), rgba(236, 72, 153, 0.05)); border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden;">
                                 <!-- EKG Monitor Header -->
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(236, 72, 153, 0.3);">
                                     <div style="color: #be185d; font-weight: 700; font-size: 1.2rem;">💗 HEART MONITOR</div>
@@ -320,6 +348,10 @@
                                     <i class="fas fa-rocket"></i>
                                     Start Free Trial
                                 </button>
+                                <button onclick="showDemoModal()" class="btn btn-outline-primary btn-lg" style="background: rgba(99, 102, 241, 0.1); color: #6366f1; border: 2px solid #6366f1; padding: 1.1rem 2rem; border-radius: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.8rem; transition: all 0.3s ease; font-size: 1rem; backdrop-filter: blur(15px); position: relative; overflow: hidden; min-width: 140px; cursor: pointer;" onmouseover="this.style.background='#6366f1'; this.style.color='white'; this.style.transform='translateY(-3px) scale(1.02)'" onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='#6366f1'; this.style.transform='translateY(0) scale(1)'">
+                                    <i class="fas fa-play-circle"></i>
+                                    Watch Demo
+                                </button>
                                 <button onclick="navigateTo('login')" class="btn btn-outline-primary btn-lg" style="background: rgba(236, 72, 153, 0.1); color: #ec4899; border: 2px solid #ec4899; padding: 1.1rem 2rem; border-radius: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.8rem; transition: all 0.3s ease; font-size: 1rem; backdrop-filter: blur(15px); position: relative; overflow: hidden; min-width: 140px; cursor: pointer;" onmouseover="this.style.background='#ec4899'; this.style.color='white'; this.style.transform='translateY(-3px) scale(1.02)'" onmouseout="this.style.background='rgba(236, 72, 153, 0.1)'; this.style.color='#ec4899'; this.style.transform='translateY(0) scale(1)'">
                                     <i class="fas fa-sign-in-alt"></i>
                                     Sign In
@@ -347,7 +379,7 @@
     </div>
 
                 <!-- Login Section -->
-                <div id="login" class="content-section" style="height: 100vh; max-height: 100vh; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); padding: 0; position: fixed; top: 0; left: 0; width: 100vw; overflow: hidden; display: none; z-index: 1000;">
+                <div id="login" class="content-section" style="height: 100vh; max-height: 100vh; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); padding: 0; position: fixed; top: 0; left: 0; width: 100%; overflow: hidden; display: none; z-index: 1000;">
                     <!-- Floating Particles -->
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
                         <div style="position: absolute; top: 15%; left: 85%; width: 60px; height: 60px; background: rgba(236, 72, 153, 0.15); border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
@@ -357,11 +389,11 @@
                         <div style="position: absolute; top: 35%; right: 50%; width: 35px; height: 35px; background: rgba(244, 114, 182, 0.18); border-radius: 50%; animation: float 9s ease-in-out infinite 0.5s;"></div>
                     </div>
                     
-                    <div class="container-fluid h-100" style="position: relative; z-index: 10; margin: 0; padding: 0; width: 100vw;">
+                    <div class="container-fluid h-100" style="position: relative; z-index: 10; margin: 0; padding: 0; width: 100%;">
                         <div class="row h-100 align-items-center justify-content-center" style="margin: 0; width: 100%;">
                             <!-- Left Side - Login Form -->
-                            <div class="col-lg-6 d-flex align-items-center justify-content-center" style="height: 100vh; padding: 1rem;">
-                                <div style="width: 100%; max-width: 700px; position: relative; margin-left: 12rem;">
+                            <div class="col-lg-6 d-flex align-items-center justify-content-center" style="height: 100vh; padding: 3rem;">
+                                <div style="width: 100%; max-width: 700px; position: relative;">
                                     <!-- Login Card -->
                                     <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: none; border-radius: 15px; padding: 1.5rem; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.1); position: relative;">
                                         <!-- Header -->
@@ -381,7 +413,12 @@
                                             
                                             <div class="mb-3">
                                                 <label for="loginPassword" style="display: block; color: #831843; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.85rem;">Password</label>
-                                                <input type="password" id="loginPassword" name="password" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="Enter your password" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                <div style="position: relative;">
+                                                    <input type="password" id="loginPassword" name="password" required style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="Enter your password" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                    <button type="button" onclick="toggleLoginPassword()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #831843; cursor: pointer; padding: 0; font-size: 0.9rem;">
+                                                        <i class="fas fa-eye" id="loginPasswordToggle"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                             
                                             <button type="submit" style="width: 100%; padding: 0.8rem; background: linear-gradient(135deg, #ec4899, #be185d); border: none; border-radius: 6px; color: white; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 3px 12px rgba(236, 72, 153, 0.3); margin-top: 0.5rem;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 20px rgba(236, 72, 153, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 12px rgba(236, 72, 153, 0.3)';">
@@ -391,6 +428,9 @@
                                         
                                         <!-- Footer -->
                                         <div class="text-center mt-3">
+                                            <p style="color: #9d174d; margin: 0; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                                <a href="#" onclick="showForgotPasswordModal()" style="color: #ec4899; text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                                            </p>
                                             <p style="color: #9d174d; margin: 0; font-size: 0.85rem;">Don't have an account? 
                                                 <a href="#" onclick="navigateTo('register')" style="color: #ec4899; text-decoration: none; font-weight: 600;">Register here</a>
                                             </p>
@@ -449,12 +489,12 @@
                 </div>
 
                 <!-- Register Section -->
-                <div id="register" class="content-section d-none" style="height: 100vh; max-height: 100vh; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); padding: 0; position: fixed; top: 0; left: 0; width: 100vw; overflow: hidden; z-index: 1000;">
-                    <div class="container-fluid h-100" style="position: relative; z-index: 10; margin: 0; padding: 0; width: 100vw;">
+                <div id="register" class="content-section d-none" style="height: 100vh; max-height: 100vh; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); padding: 0; position: fixed; top: 0; left: 0; width: 100%; overflow: hidden; z-index: 1000;">
+                    <div class="container-fluid h-100" style="position: relative; z-index: 10; margin: 0; padding: 0; width: 100%;">
                         <div class="row h-100 align-items-center justify-content-center" style="margin: 0; width: 100%;">
                             <!-- Left Side - Registration Form -->
-                            <div class="col-lg-6 d-flex align-items-center justify-content-center" style="height: 100vh; padding: 1rem;">
-                                <div style="width: 100%; max-width: 700px; position: relative; margin-left: 12rem;">
+                            <div class="col-lg-6 d-flex align-items-center justify-content-center" style="height: 100vh; padding: 3rem;">
+                                <div style="width: 100%; max-width: 700px; position: relative;">
                                     <!-- Register Card -->
                                     <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: none; border-radius: 15px; padding: 1.5rem; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.1); position: relative;">
                                         <!-- Header -->
@@ -479,12 +519,22 @@
                                             
                                             <div class="mb-3">
                                                 <label for="registerPassword" style="display: block; color: #831843; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.85rem;">Password</label>
-                                                <input type="password" id="registerPassword" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                <div style="position: relative;">
+                                                    <input type="password" id="registerPassword" required style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                    <button type="button" onclick="toggleRegisterPassword()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #831843; cursor: pointer; padding: 0; font-size: 0.9rem;">
+                                                        <i class="fas fa-eye" id="registerPasswordToggle"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                             
                                             <div class="mb-3">
                                                 <label for="registerConfirmPassword" style="display: block; color: #831843; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.85rem;">Confirm Password</label>
-                                                <input type="password" id="registerConfirmPassword" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                <div style="position: relative;">
+                                                    <input type="password" id="registerConfirmPassword" required style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem; transition: all 0.3s ease;" placeholder="" onfocus="this.style.borderColor='#ec4899'; this.style.boxShadow='0 0 8px rgba(236, 72, 153, 0.2)';" onblur="this.style.borderColor='rgba(236, 72, 153, 0.3)'; this.style.boxShadow='none';">
+                                                    <button type="button" onclick="toggleConfirmPassword()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #831843; cursor: pointer; padding: 0; font-size: 0.9rem;">
+                                                        <i class="fas fa-eye" id="confirmPasswordToggle"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                             
                                             <button type="submit" style="width: 100%; padding: 0.8rem; background: linear-gradient(135deg, #ec4899, #be185d); border: none; border-radius: 6px; color: white; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 3px 12px rgba(236, 72, 153, 0.3); margin-top: 0.5rem;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 20px rgba(236, 72, 153, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 12px rgba(236, 72, 153, 0.3)';">
@@ -614,6 +664,49 @@
                                         </div>
                                         <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Profile</h5>
                                         <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Manage account</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Tools -->
+                        <div class="professional-card">
+                            <h3 style="color: #831843; margin-bottom: 2rem; text-align: center; font-weight: 700;">AI Tools</h3>
+                            <div class="row mb-4">
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1)); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="navigateTo('ai-symptom')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(99, 102, 241, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);">
+                                            <i class="fas fa-stethoscope" style="font-size: 1.5rem; color: white;"></i>
+                                        </div>
+                                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Symptom Checker</h5>
+                                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Analyze your symptoms</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="navigateTo('ai-coach')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(16, 185, 129, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);">
+                                            <i class="fas fa-user-md" style="font-size: 1.5rem; color: white;"></i>
+                                        </div>
+                                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Health Coach</h5>
+                                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Personalized health plans</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1)); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="navigateTo('ai-risk')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(6, 182, 212, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);">
+                                            <i class="fas fa-calculator" style="font-size: 1.5rem; color: white;"></i>
+                                        </div>
+                                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Risk Calculator</h5>
+                                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Calculate cardiovascular risk</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="navigateTo('ai-nutrition')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(245, 158, 11, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);">
+                                            <i class="fas fa-apple-alt" style="font-size: 1.5rem; color: white;"></i>
+                                        </div>
+                                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">Nutrition Advisor</h5>
+                                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Get personalized meal plans</p>
                                     </div>
                                 </div>
                             </div>
@@ -1898,6 +1991,309 @@
                     </script>
                 </div>
 
+                <!-- AI Symptom Checker Section -->
+                <div id="ai-symptom" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px);">
+                        <h3 style="color: #831843;">AI Symptom Checker</h3>
+                        <label style="color: #831843; font-weight: 600; margin-bottom: 1rem;">Select your symptoms:</label>
+                        <div id="symptomButtons" style="margin-bottom: 1rem;">
+                            <button class="symptom-btn" data-symptom="chest_pain" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Chest Pain</button>
+                            <button class="symptom-btn" data-symptom="shortness_of_breath" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Shortness of Breath</button>
+                            <button class="symptom-btn" data-symptom="irregular_heartbeat" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Irregular Heartbeat</button>
+                            <button class="symptom-btn" data-symptom="fatigue" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Fatigue</button>
+                            <button class="symptom-btn" data-symptom="dizziness" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Dizziness</button>
+                            <button class="symptom-btn" data-symptom="nausea" style="margin: 0.3rem; padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid #ec4899; background: white; color: #ec4899; cursor: pointer;" onclick="this.classList.toggle('active'); if(this.classList.contains('active')){this.style.background='#ec4899'; this.style.color='white';}else{this.style.background='white'; this.style.color='#ec4899';}">Nausea</button>
+                        </div>
+                        <button class="btn btn-primary" onclick="analyzeSymptoms()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none;">Analyze Symptoms</button>
+                        <div id="symptomResult"></div>
+                    </div>
+                </div>
+
+                <!-- AI Health Coach Section -->
+                <div id="ai-coach" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px);">
+                        <h3 style="color: #831843;">AI Health Coach</h3>
+                        <div class="row">
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">Age</label><input type="number" id="coachAge" class="form-control" value="35"></div>
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">BMI</label><input type="number" id="coachBMI" class="form-control" value="24" step="0.1"></div>
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">Activity Level</label><select id="coachActivity" class="form-control"><option value="low">Low</option><option value="moderate" selected>Moderate</option><option value="high">High</option></select></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="getHealthCoaching()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none;">Get Personalized Plan</button>
+                        <div id="coachResult"></div>
+                    </div>
+                </div>
+
+                <!-- AI Risk Calculator Section -->
+                <div id="ai-risk" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px);">
+                        <h3 style="color: #831843;">AI Risk Calculator</h3>
+                        <div class="row">
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">Age</label><input type="number" id="riskAge" class="form-control" value="45"></div>
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">Cholesterol (mg/dL)</label><input type="number" id="riskChol" class="form-control" value="200"></div>
+                            <div class="col-md-4 mb-3"><label style="color: #831843; font-weight: 600;">Blood Pressure</label><input type="number" id="riskBP" class="form-control" value="120"></div>
+                            <div class="col-md-4 mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="riskSmoking"><label class="form-check-label" style="color: #831843;">Smoking</label></div></div>
+                            <div class="col-md-4 mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="riskDiabetes"><label class="form-check-label" style="color: #831843;">Diabetes</label></div></div>
+                            <div class="col-md-4 mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="riskFamily"><label class="form-check-label" style="color: #831843;">Family History</label></div></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="calculateRisk()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none;">Calculate Risk</button>
+                        <div id="riskResult"></div>
+                    </div>
+                </div>
+
+                <!-- AI Nutrition Advisor Section -->
+                <div id="ai-nutrition" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px);">
+                        <h3 style="color: #831843;">AI Nutrition Advisor</h3>
+                        <div class="row">
+                            <div class="col-md-3 mb-3"><label style="color: #831843; font-weight: 600;">Age</label><input type="number" id="nutritionAge" class="form-control" value="30"></div>
+                            <div class="col-md-3 mb-3"><label style="color: #831843; font-weight: 600;">Weight (kg)</label><input type="number" id="nutritionWeight" class="form-control" value="70"></div>
+                            <div class="col-md-3 mb-3"><label style="color: #831843; font-weight: 600;">Height (cm)</label><input type="number" id="nutritionHeight" class="form-control" value="170"></div>
+                            <div class="col-md-3 mb-3"><label style="color: #831843; font-weight: 600;">Goal</label><select id="nutritionGoal" class="form-control"><option value="lose">Lose Weight</option><option value="maintain" selected>Maintain</option><option value="gain">Gain Weight</option></select></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="getNutritionPlan()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none;">Get Nutrition Plan</button>
+                        <div id="nutritionResult"></div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analytics" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 3rem;">
+                        <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4); animation: heartbeat 2s ease-in-out infinite;">
+                            <i class="fas fa-chart-bar" style="font-size: 3rem; color: white;"></i>
+                        </div>
+                        <h2 style="color: #831843; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #ec4899, #be185d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Health Analytics</h2>
+                        <p style="color: #9d174d; font-size: 1.2rem;">Comprehensive visualization of your health data and trends</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-4">
+                            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                                <h5 style="color: #831843; margin-bottom: 1.5rem; font-weight: 600;"><i class="fas fa-tachometer-alt" style="color: #ec4899;"></i> Risk Gauge</h5>
+                                <canvas id="riskGaugeChart" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                                <h5 style="color: #831843; margin-bottom: 1.5rem; font-weight: 600;"><i class="fas fa-chart-area" style="color: #ec4899;"></i> Health Parameters Radar</h5>
+                                <canvas id="radarChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-4">
+                            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                                <h5 style="color: #831843; margin-bottom: 1.5rem; font-weight: 600;"><i class="fas fa-heartbeat" style="color: #ec4899;"></i> BP/HR Trend</h5>
+                                <canvas id="trendChart" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                                <h5 style="color: #831843; margin-bottom: 1.5rem; font-weight: 600;"><i class="fas fa-chart-bar" style="color: #ec4899;"></i> Prediction Distribution</h5>
+                                <canvas id="predictionBarChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nearby Hospitals Section -->
+                <div id="nearby-hospitals" class="content-section d-none" style="position: relative; overflow: hidden; background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <!-- Enhanced Header -->
+                    <div style="text-align: center; margin-bottom: 3rem; position: relative; z-index: 10;">
+                        <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4); animation: heartbeat 2s ease-in-out infinite;">
+                            <i class="fas fa-hospital" style="font-size: 3rem; color: white;"></i>
+                        </div>
+                        <h2 style="color: #831843; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #ec4899, #be185d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Nearby Hospitals</h2>
+                        <p style="color: #9d174d; font-size: 1.2rem; max-width: 600px; margin: 0 auto;">Find the best hospitals and medical facilities near you in Bangalore</p>
+                    </div>
+                    
+                    <!-- Search and Filter Section -->
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.1); margin-bottom: 2rem; position: relative; z-index: 10;">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text" style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); color: #831843;">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" placeholder="Search hospitals by name or area..." id="hospitalSearchInput" style="background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.3); color: #831843;">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-control" id="hospitalTypeFilter" style="background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.3); color: #831843;">
+                                    <option value="">All Hospital Types</option>
+                                    <option value="multi-specialty">Multi-Specialty</option>
+                                    <option value="cardiac">Cardiac Specialty</option>
+                                    <option value="emergency">Emergency Care</option>
+                                    <option value="government">Government</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Map Section -->
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.1); margin-bottom: 2rem; position: relative; z-index: 10;">
+                        <h4 style="color: #831843; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-map-marked-alt" style="color: #ec4899;"></i>
+                            Hospital Locations Map
+                        </h4>
+                        <div id="hospitalMap" style="height: 400px; border-radius: 15px; overflow: hidden; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(236, 72, 153, 0.2);">
+                            <div style="text-align: center; color: #831843;">
+                                <i class="fas fa-map" style="font-size: 3rem; color: #ec4899; margin-bottom: 1rem;"></i>
+                                <p>Interactive map will load automatically</p>
+                                <div style="width: 40px; height: 40px; border: 4px solid #ec4899; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 1rem auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hospitals List -->
+                    <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 25px; padding: 2rem; backdrop-filter: blur(15px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.1); position: relative; z-index: 10;">
+                        <h4 style="color: #831843; font-weight: 600; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-hospital-alt" style="color: #ec4899;"></i>
+                            Top Hospitals in Bangalore
+                        </h4>
+                        <div id="hospitalsList" class="row">
+                            <!-- Hospital cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Panel Section -->
+                <div id="admin" class="content-section d-none" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%); height: 100vh; padding: 2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);">
+                            <i class="fas fa-user-shield" style="font-size: 2.5rem; color: white;"></i>
+                        </div>
+                        <h2 style="color: #831843; font-weight: 800; font-size: 2rem; background: linear-gradient(135deg, #ec4899, #be185d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Admin Panel</h2>
+                        <p style="color: #9d174d; font-size: 1rem;">System administration and monitoring</p>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="admin-tab-btn active" data-tab="dashboard" onclick="adminShowTab('dashboard')"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+                        <button class="admin-tab-btn" data-tab="users" onclick="adminShowTab('users')"><i class="fas fa-users"></i> Users</button>
+                        <button class="admin-tab-btn" data-tab="predictions" onclick="adminShowTab('predictions')"><i class="fas fa-heartbeat"></i> Predictions</button>
+                        <button class="admin-tab-btn" data-tab="health" onclick="adminShowTab('health')"><i class="fas fa-server"></i> System Health</button>
+                    </div>
+
+                    <!-- Dashboard Tab -->
+                    <div id="admin-tab-dashboard" class="admin-tab-content">
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-3">
+                                <div class="admin-stat-card">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);"><i class="fas fa-users"></i></div>
+                                    <div class="stat-value" id="adminTotalUsers">0</div>
+                                    <div class="stat-label">Total Users</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="admin-stat-card">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);"><i class="fas fa-heartbeat"></i></div>
+                                    <div class="stat-value" id="adminTotalPredictions">0</div>
+                                    <div class="stat-label">Total Predictions</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="admin-stat-card">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fas fa-file-medical"></i></div>
+                                    <div class="stat-value" id="adminTotalDocuments">0</div>
+                                    <div class="stat-label">Total Documents</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="admin-stat-card">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-chart-line"></i></div>
+                                    <div class="stat-value" id="adminHighRisk">0</div>
+                                    <div class="stat-label">High Risk Cases</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 1.5rem;">
+                                    <h5 style="color: #831843; font-weight: 600; margin-bottom: 1.5rem;">Risk Distribution</h5>
+                                    <canvas id="adminRiskChart" height="200"></canvas>
+                                    <div style="display: flex; justify-content: space-around; margin-top: 1rem; font-size: 0.85rem; color: #831843;">
+                                        <div><span style="color: #10b981;">●</span> Low: <strong id="adminLowRisk">0</strong></div>
+                                        <div><span style="color: #f59e0b;">●</span> Moderate: <strong id="adminModRisk">0</strong></div>
+                                        <div><span style="color: #ef4444;">●</span> High: <strong id="adminHighRisk">0</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 1.5rem;">
+                                    <h5 style="color: #831843; font-weight: 600; margin-bottom: 1.5rem;">Recent Activity</h5>
+                                    <div id="adminRecentActivity" style="max-height: 250px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Tab -->
+                    <div id="admin-tab-users" class="admin-tab-content d-none">
+                        <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <h4 style="color: #831843; margin: 0; font-weight: 600;">User Management</h4>
+                                <button onclick="loadAdminUsers(1)" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 600; cursor: pointer;"><i class="fas fa-sync"></i> Refresh</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminUsersBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="admin-pagination" id="adminUsersPagination" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Predictions Tab -->
+                    <div id="admin-tab-predictions" class="admin-tab-content d-none">
+                        <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <h4 style="color: #831843; margin: 0; font-weight: 600;">Predictions Overview</h4>
+                                <button onclick="loadAdminPredictions(1)" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 600; cursor: pointer;"><i class="fas fa-sync"></i> Refresh</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>User</th>
+                                            <th>Patient</th>
+                                            <th>Risk</th>
+                                            <th>Confidence</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminPredictionsBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="admin-pagination" id="adminPredictionsPagination" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- System Health Tab -->
+                    <div id="admin-tab-health" class="admin-tab-content d-none">
+                        <div style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); border-radius: 20px; padding: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <h4 style="color: #831843; margin: 0; font-weight: 600;">System Health Monitor</h4>
+                                <button onclick="loadSystemHealth()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 600; cursor: pointer;"><i class="fas fa-sync"></i> Refresh</button>
+                            </div>
+                            <div id="adminHealthContent"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Medical Report Section -->
                 <div id="medical-report" class="content-section d-none professional-container" style="height: 100vh; overflow-y: auto; max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box;">
                     <div class="floating-elements">
@@ -1926,17 +2322,543 @@
         </div>
     </div>
 
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: linear-gradient(135deg, #fdf2f8, #fce7f3); border: none; border-radius: 20px;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #ec4899, #be185d); color: white; border-radius: 20px 20px 0 0; border: none;">
+                    <h5 class="modal-title" style="font-weight: 600;">
+                        <i class="fas fa-key me-2"></i>
+                        Reset Password
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 2rem; color: #831843;">
+                    <p style="margin-bottom: 1.5rem;">Enter your email address and we'll send you instructions to reset your password.</p>
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="forgotEmail" style="display: block; color: #831843; font-weight: 500; margin-bottom: 0.5rem;">Email Address</label>
+                            <input type="email" id="forgotEmail" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843;" placeholder="Enter your email">
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 0.8rem; background: linear-gradient(135deg, #ec4899, #be185d); border: none; border-radius: 6px; color: white; font-weight: 600;">
+                            Send Reset Instructions
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Alert Container -->
     <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
 
+    <!-- Creative Watch Demo Modal -->
+    <div id="creativeDemo" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="creativeTitle" style="display:none; position:fixed; inset:0; z-index:4000; align-items:center; justify-content:center; padding:2rem;">
+      <div class="creative-backdrop" onclick="closeCreativeDemo()" style="position:absolute; inset:0; background:rgba(10,10,10,0.45); backdrop-filter: blur(6px);"></div>
+      <div class="creative-panel" style="position:relative; width: min(1100px, 96%); border-radius:14px; overflow:hidden; box-shadow: 0 40px 120px rgba(13,12,15,0.45); background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,248,250,0.98)); display:grid; grid-template-columns: 1fr 420px;">
+        <div class="creative-main" style="padding: 1.25rem 1.6rem; display:flex; flex-direction:column; gap:1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding-bottom:.25rem; border-bottom:1px solid rgba(0,0,0,0.04);">
+            <div>
+              <div style="font-weight:800; color:#831843; font-size:1.1rem;">Interactive Demo • AI Heart Prediction</div>
+              <div style="color:#9d174d; font-weight:700; font-size:.86rem;">See how upload → OCR → AI flows in one preview</div>
+            </div>
+            <button id="creativeClose" onclick="closeCreativeDemo()" style="border:none;background:none;font-weight:700;color:#9d174d;cursor:pointer;font-size:1.5rem;">✕</button>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr; gap: .9rem;">
+            <div style="height:150px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; border-radius:12px; padding: .85rem; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(236,72,153,0.06); box-shadow: 0 8px 30px rgba(236,72,153,0.06);">
+              <svg width="100%" height="120" viewBox="0 0 800 120" preserveAspectRatio="none">
+                <path id="ecgPath" d="M0 70 L60 70 L90 40 L120 90 L160 70 L220 70 L260 40 L300 110 L360 70 L420 70 L460 50 L500 110 L560 70 L620 70 L700 40 L760 95 L800 70" stroke="#ec4899" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" style="filter: drop-shadow(0 8px 18px rgba(236,72,153,0.12));"/>
+              </svg>
+              <div style="position:absolute; right:12px; top:12px; width:44px; height:44px; border-radius:50%; background: linear-gradient(135deg,#ff6b6b,#ee5a52); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; box-shadow: 0 8px 28px rgba(236,72,153,0.12); font-size:1.5rem;">❤</div>
+            </div>
+            <div style="display:flex; gap:1rem; align-items:flex-start; border-radius:12px; padding: .85rem; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(236,72,153,0.06); box-shadow: 0 8px 30px rgba(236,72,153,0.06);">
+              <div style="width:140px; height:110px; border-radius:10px; background:linear-gradient(180deg,#fff,#fff); border:1px solid rgba(236,72,153,0.04); padding:.6rem; display:flex; flex-direction:column; gap:.5rem;">
+                <div style="height:8px;border-radius:6px;background:linear-gradient(90deg, rgba(236,72,153,0.12), rgba(236,72,153,0.06)); width:78%;"></div>
+                <div style="height:8px;border-radius:6px;background:linear-gradient(90deg, rgba(236,72,153,0.12), rgba(236,72,153,0.06)); width:64%;"></div>
+                <div style="height:8px;border-radius:6px;background:linear-gradient(90deg, rgba(236,72,153,0.12), rgba(236,72,153,0.06)); width:88%;"></div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700; color:#9d174d;">Document OCR</div>
+                <div style="color:#9d174d; font-size:.88rem; opacity:.85;">Upload medical forms · Auto-extract key vitals</div>
+                <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+                  <div class="doc-line" style="height:10px; border-radius:8px; background:linear-gradient(90deg, rgba(236,72,153,0.10), rgba(236,72,153,0.04)); width:0%;"></div>
+                  <div class="doc-line" style="height:10px; border-radius:8px; background:linear-gradient(90deg, rgba(236,72,153,0.10), rgba(236,72,153,0.04)); width:0%;"></div>
+                  <div class="doc-line" style="height:10px; border-radius:8px; background:linear-gradient(90deg, rgba(236,72,153,0.10), rgba(236,72,153,0.04)); width:0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:.95rem; color:#9d174d; margin-top:.3rem;">Real-time demo: watch the system read a document, analyze vitals, and provide a concise recommendation — all simulated for preview.</div>
+          <div style="padding: .85rem 1rem; background: linear-gradient(180deg, rgba(236,72,153,0.01), rgba(244,114,182,0.01)); text-align:center; font-size:.88rem; color:#9d174d;">No real data is used in this demo — it's a preview only.</div>
+        </div>
+        <div style="padding:1.2rem; background: linear-gradient(180deg, rgba(236,72,153,0.03), rgba(244,114,182,0.02)); border-left:1px solid rgba(236,72,153,0.05); display:flex; flex-direction:column; gap:1rem; align-items:center;">
+          <div style="width:180px; height:180px; border-radius:50%; display:flex; align-items:center; justify-content:center; background: conic-gradient(from 0deg, rgba(236,72,153,0.16), rgba(99,102,241,0.16)); box-shadow: 0 10px 40px rgba(99,102,241,0.06);">
+            <div style="width:120px; height:120px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column; font-weight:800; color:#be185d; box-shadow: inset 0 2px 0 rgba(255,255,255,0.7);">
+              <div id="procPercent" style="font-size:1.5rem;">0%</div>
+              <div style="font-size:.92rem; font-weight:700; color:#9d174d; margin-top:.4rem;">Processing</div>
+            </div>
+          </div>
+          <div id="creativeResult" style="width:100%; border-radius:10px; padding:.9rem; background:linear-gradient(180deg, rgba(236,72,153,0.06), rgba(244,114,182,0.02)); border:1px solid rgba(236,72,153,0.07); text-align:center; display:none;">
+            <div style="font-weight:900; font-size:1.05rem; color:#ef4444; margin-bottom:.4rem;">Moderate</div>
+            <p style="margin:0; color:#9d174d;">Follow-up ECG & lifestyle review recommended</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:.65rem; width:100%;">
+            <button id="demoStartBtn" style="width:100%; padding:.75rem 1rem; border-radius:12px; border:none; cursor:pointer; font-weight:800; background:linear-gradient(90deg,#10b981,#059669); color:white;">Start Free Trial</button>
+            <button id="demoCloseBtn" style="width:100%; padding:.75rem 1rem; border-radius:12px; border:none; cursor:pointer; font-weight:800; background:transparent; border:1px solid rgba(236,72,153,0.12); color:#be185d;">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+    /* Higher-specificity rules so your site CSS doesn't override these demo animations */
+    #creativeDemo[open] { display:flex !important; }
+    #creativeDemo .ecg-line {
+      stroke-dasharray: 1000 !important;
+      stroke-dashoffset: 0 !important;
+      animation: scrollECG 2.6s linear infinite !important;
+    }
+    @keyframes scrollECG { to { stroke-dashoffset: -1000; } }
+    
+    /* doc line reveal (use width transition rather than CSS animation to avoid conflicts) */
+    #creativeDemo .doc-line {
+      transition: width 700ms cubic-bezier(.2,.9,.2,1), opacity 400ms ease;
+      opacity: 0;
+      width: 0 !important;
+    }
+    
+    /* result card should be hidden initially, shown after progress completes */
+    #creativeDemo #creativeResult { display: none; }
+    
+    /* ensure the processing ring percent is visible and centered */
+    #creativeDemo #procPercent { font-weight:800; color:#be185d; }
+    
+    @media (max-width:980px) { .creative-panel { grid-template-columns: 1fr !important; } }
+    </style>
+
+    <script>
+    (function(){
+      console.clear();
+      const modal = document.getElementById('creativeDemo');
+      const backdrop = modal.querySelector('.creative-backdrop');
+      const closeBtn = document.getElementById('creativeClose');
+      const procPercent = document.getElementById('procPercent');
+      const resultCard = document.getElementById('creativeResult');
+      const docLines = modal.querySelectorAll('.doc-line');
+      const ecgLine = modal.querySelector('#ecgPath');
+      let pctTimer = null;
+
+      function restartECGAnimation(){
+        if(!ecgLine) return;
+        ecgLine.style.animation = 'none';
+        void ecgLine.offsetWidth;
+        ecgLine.style.animation = 'scrollECG 2.6s linear infinite';
+        console.log('[demo] ECG animation restarted');
+      }
+
+      function animateDocLines(){
+        if(!docLines || docLines.length === 0) return;
+        docLines.forEach((el, i) => {
+          const final = ['92%','76%','62%'][i] || '80%';
+          setTimeout(()=> {
+            el.style.width = final;
+            el.style.opacity = '1';
+          }, 450 + i * 300);
+        });
+        console.log('[demo] doc lines animated');
+      }
+
+      function simulateProgress(onComplete){
+        let p = 0;
+        procPercent.textContent = '0%';
+        resultCard.style.display = 'none';
+        clearInterval(pctTimer);
+        pctTimer = setInterval(()=> {
+          p += Math.ceil(Math.random() * 6);
+          if (p >= 100) p = 100;
+          procPercent.textContent = p + '%';
+          if (p >= 100) {
+            clearInterval(pctTimer);
+            console.log('[demo] progress reached 100%');
+            setTimeout(()=> {
+              resultCard.style.display = 'block';
+              resultCard.setAttribute('aria-hidden','false');
+              onComplete && onComplete();
+            }, 500);
+          }
+        }, 110);
+      }
+
+      function openModal(){
+        console.log('[demo] openModal');
+        modal.setAttribute('open','');
+        modal.setAttribute('aria-hidden','false');
+        document.body.style.overflow = 'hidden';
+        docLines.forEach(el => { el.style.width = '0'; el.style.opacity = '0'; });
+        procPercent.textContent = '0%';
+        resultCard.style.display = 'none';
+        restartECGAnimation();
+        setTimeout(()=> animateDocLines(), 300);
+        setTimeout(()=> simulateProgress(), 900);
+      }
+
+      function closeModal(){
+        console.log('[demo] closeModal');
+        modal.removeAttribute('open');
+        modal.setAttribute('aria-hidden','true');
+        document.body.style.overflow = '';
+        clearInterval(pctTimer);
+        docLines.forEach(el=> { el.style.width = '0'; el.style.opacity='0'; });
+        resultCard.style.display = 'none';
+      }
+
+      closeBtn.addEventListener('click', closeModal);
+      backdrop.addEventListener('click', closeModal);
+      document.getElementById('demoCloseBtn').addEventListener('click', closeModal);
+      document.getElementById('demoStartBtn').addEventListener('click', function() {
+        closeModal();
+        setTimeout(() => navigateTo('register'), 500);
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.hasAttribute('open')) closeModal(); });
+
+      if(!ecgLine) console.warn('[demo] ecg-line SVG path not found');
+      if(docLines.length === 0) console.warn('[demo] doc-line elements not found');
+      
+      window.showDemoModal = openModal;
+      window.startDemo = function() { closeModal(); setTimeout(() => navigateTo('register'), 500); };
+    })();
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/charts-fix.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <!-- Load main app script FIRST to ensure functions are available -->
-    <script src="js/app_clean_fixed.js"></script>
-    <script src="js/document-modal-fix.js"></script>
+    <script src="js/real-hospital-map.js"></script>
+    <script src="js/hospitals-direct.js"></script>
+    <script src="js/nearby-hospitals.js"></script>
+    <script src="js/map-fix.js"></script>
+    <script src="js/hospital-init.js"></script>
+    <script src="js/app_clean_fixed.js?v=2"></script>
+    <script src="js/map-fix.js?v=1"></script>
+    <script src="js/nearby-hospitals.js?v=1"></script>
+    <script src="js/hospital-init.js?v=1"></script>`n    <script src="js/analytics-charts-inline.js"></script>
+    <script src="js/realtime-monitor.js?v=1"></script>
+    <script src="js/document-modal-fix.js?v=2"></script>
+    <script src="js/chatbot.js?v=2"></script>
+    <script src="js/prediction-fix.js?v=2"></script>
+    <script src="js/document-extraction-real.js?v=2"></script>
+    <script src="js/layout-fix.js?v=2" defer></script>
+    <script>
+    // Password toggle function
+    function toggleLoginPassword() {
+        const passwordField = document.getElementById('loginPassword');
+        const toggleIcon = document.getElementById('loginPasswordToggle');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+    
+    // Register password toggle functions
+    function toggleRegisterPassword() {
+        const passwordField = document.getElementById('registerPassword');
+        const toggleIcon = document.getElementById('registerPasswordToggle');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+    
+    function toggleConfirmPassword() {
+        const passwordField = document.getElementById('registerConfirmPassword');
+        const toggleIcon = document.getElementById('confirmPasswordToggle');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+    
+    // Show forgot password modal
+    function showForgotPassword() {
+        const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+        modal.show();
+    }
+    
+    // Handle forgot password form
+    document.addEventListener('DOMContentLoaded', function() {
+        const forgotForm = document.getElementById('forgotPasswordForm');
+        if (forgotForm) {
+            forgotForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('forgotEmail').value;
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/auth/forgot-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: email })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('Password reset instructions have been sent to your email (if the account exists).');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                        modal.hide();
+                        document.getElementById('forgotEmail').value = '';
+                    } else {
+                        alert(data.error || 'Failed to send reset instructions');
+                    }
+                } catch (error) {
+                    alert('Network error. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+    });
+    
+    // Dark Mode Toggle
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDark);
+        document.getElementById('theme-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        document.getElementById('theme-text').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    }
+    
+    // Load saved theme
+    if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+        setTimeout(() => {
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (icon) icon.className = 'fas fa-sun';
+            if (text) text.textContent = 'Light Mode';
+        }, 100);
+    }
+    
+    const API_URL = 'http://127.0.0.1:5000/api/ai-tools';
+    
+    async function analyzeSymptoms() {
+        const token = localStorage.getItem('authToken');
+        const selectedSymptoms = Array.from(document.querySelectorAll('.symptom-btn.active')).map(btn => btn.dataset.symptom);
+        if (selectedSymptoms.length === 0) { alert('Please select at least one symptom'); return; }
+        const response = await fetch(`${API_URL}/symptom-checker`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ symptoms: selectedSymptoms }) });
+        const data = await response.json();
+        let html = `<div style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem;"><h5 style="color: #831843;">Analysis Results</h5><p><strong>Risk Score:</strong> ${data.risk_score}/100</p><p><strong>Urgency:</strong> <span style="color: ${data.urgency === 'High' ? '#ef4444' : data.urgency === 'Moderate' ? '#f59e0b' : '#10b981'}">${data.urgency}</span></p><h6 style="color: #831843; margin-top: 1rem;">Possible Conditions:</h6><ul>`;
+        data.conditions.forEach(c => { html += `<li>${c.name} - ${c.probability}% probability (${c.severity} severity)</li>`; });
+        html += `</ul><h6 style="color: #831843;">Recommendations:</h6><ul>`;
+        data.recommendations.forEach(r => { html += `<li>${r}</li>`; });
+        html += `</ul></div>`;
+        document.getElementById('symptomResult').innerHTML = html;
+    }
+
+    async function getHealthCoaching() {
+        const token = localStorage.getItem('authToken');
+        const userData = {age: parseInt(document.getElementById('coachAge').value), bmi: parseFloat(document.getElementById('coachBMI').value), activity_level: document.getElementById('coachActivity').value};
+        const response = await fetch(`${API_URL}/health-coach`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ user_data: userData })});
+        const data = await response.json();
+        let html = `<div style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem;"><h5 style="color: #831843;">Your Personalized Health Plan</h5><h6 style="color: #831843; margin-top: 1rem;">Diet Plan:</h6><ul>${data.personalized_plan.diet.map(d => `<li>${d}</li>`).join('')}</ul><h6 style="color: #831843;">Exercise Plan:</h6><ul>${data.personalized_plan.exercise.map(e => `<li>${e}</li>`).join('')}</ul><h6 style="color: #831843;">Lifestyle Tips:</h6><ul>${data.personalized_plan.lifestyle.map(l => `<li>${l}</li>`).join('')}</ul><div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;"><strong style="color: #10b981;">💪 ${data.motivation}</strong></div></div>`;
+        document.getElementById('coachResult').innerHTML = html;
+    }
+
+    async function calculateRisk() {
+        const token = localStorage.getItem('authToken');
+        const riskData = {age: parseInt(document.getElementById('riskAge').value), cholesterol: parseInt(document.getElementById('riskChol').value), blood_pressure: parseInt(document.getElementById('riskBP').value), smoking: document.getElementById('riskSmoking').checked, diabetes: document.getElementById('riskDiabetes').checked, family_history: document.getElementById('riskFamily').checked};
+        const response = await fetch(`${API_URL}/risk-calculator`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify(riskData)});
+        const data = await response.json();
+        const color = data.risk_category === 'High' ? '#ef4444' : data.risk_category === 'Moderate' ? '#f59e0b' : '#10b981';
+        let html = `<div style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem;"><h5 style="color: #831843;">10-Year Cardiovascular Risk</h5><div style="text-align: center; margin: 2rem 0;"><div style="font-size: 3rem; font-weight: 800; color: ${color};">${data.ten_year_risk}%</div><div style="font-size: 1.2rem; color: ${color}; font-weight: 600;">${data.risk_category} Risk</div></div><h6 style="color: #831843;">Recommendations:</h6><ul>${data.recommendations.map(r => `<li>${r}</li>`).join('')}</ul></div>`;
+        document.getElementById('riskResult').innerHTML = html;
+    }
+
+    async function getNutritionPlan() {
+        const token = localStorage.getItem('authToken');
+        const nutritionData = {age: parseInt(document.getElementById('nutritionAge').value), weight: parseFloat(document.getElementById('nutritionWeight').value), height: parseFloat(document.getElementById('nutritionHeight').value), goal: document.getElementById('nutritionGoal').value, activity_level: 'moderate'};
+        const response = await fetch(`${API_URL}/nutrition-advisor`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify(nutritionData)});
+        const data = await response.json();
+        let html = `<div style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem;"><h5 style="color: #831843;">Your Personalized Nutrition Plan</h5><div style="background: rgba(236, 72, 153, 0.1); padding: 1rem; border-radius: 10px; margin: 1rem 0;"><strong>BMI: ${data.bmi}</strong> - ${data.bmi_category}</div><h6 style="color: #831843;">Daily Nutrition Targets:</h6><ul><li>Calories: ${data.daily_nutrition.calories} kcal</li><li>Protein: ${data.daily_nutrition.protein_g}g</li><li>Carbs: ${data.daily_nutrition.carbs_g}g</li><li>Fats: ${data.daily_nutrition.fats_g}g</li><li>Water: ${data.hydration}</li></ul><h6 style="color: #831843;">Sample Meal Plan:</h6><div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;"><div><strong>Breakfast:</strong><ul>${data.meal_plan.breakfast.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Lunch:</strong><ul>${data.meal_plan.lunch.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Dinner:</strong><ul>${data.meal_plan.dinner.map(m => `<li>${m}</li>`).join('')}</ul></div><div><strong>Snacks:</strong><ul>${data.meal_plan.snacks.map(m => `<li>${m}</li>`).join('')}</ul></div></div><h6 style="color: #831843; margin-top: 1rem;">Recommended Supplements:</h6><ul>${data.supplements.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
+        document.getElementById('nutritionResult').innerHTML = html;
+    }
+    </script>
+    <script>
+    // Analytics Charts
+    function loadAnalytics() {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) return;
+
+        fetch('http://127.0.0.1:5000/api/predictions', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const predictions = data.predictions || [];
+            if (predictions.length === 0) return;
+
+            // Risk Gauge
+            const latestPred = predictions[predictions.length - 1];
+            const riskValue = latestPred.confidence_score ? latestPred.confidence_score * 100 : 50;
+            new Chart(document.getElementById('riskGaugeChart'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [riskValue, 100 - riskValue],
+                        backgroundColor: ['#ec4899', '#f0f0f0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    circumference: 180,
+                    rotation: 270,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            // Radar Chart
+            const avgData = predictions[0].input_data || {};
+            new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Age', 'BP', 'Cholesterol', 'Heart Rate', 'Blood Sugar'],
+                    datasets: [{
+                        label: 'Your Health',
+                        data: [
+                            (avgData.age || 50) / 1.2,
+                            (avgData.trestbps || 120) / 2,
+                            (avgData.chol || 200) / 4,
+                            (avgData.thalach || 150) / 2,
+                            (avgData.fbs || 0) * 50
+                        ],
+                        backgroundColor: 'rgba(236, 72, 153, 0.2)',
+                        borderColor: '#ec4899',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // BP/HR Trend
+            const trendData = predictions.slice(-5).map(p => p.input_data || {});
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: trendData.map((_, i) => `Test ${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'Blood Pressure',
+                            data: trendData.map(d => d.trestbps || 120),
+                            borderColor: '#ec4899',
+                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Heart Rate',
+                            data: trendData.map(d => d.thalach || 150),
+                            borderColor: '#be185d',
+                            backgroundColor: 'rgba(190, 24, 93, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            // Prediction Bar Chart
+            const riskCounts = { low: 0, moderate: 0, high: 0 };
+            predictions.forEach(p => {
+                const risk = p.risk_category || 'low';
+                if (risk.toLowerCase().includes('high')) riskCounts.high++;
+                else if (risk.toLowerCase().includes('moderate')) riskCounts.moderate++;
+                else riskCounts.low++;
+            });
+            new Chart(document.getElementById('predictionBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Low Risk', 'Moderate Risk', 'High Risk'],
+                    datasets: [{
+                        label: 'Predictions',
+                        data: [riskCounts.low, riskCounts.moderate, riskCounts.high],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading analytics:', error));
+    }
+
+    // Load analytics when section is shown
+    const originalNavigateTo = window.navigateTo;
+    window.navigateTo = function(sectionId) {
+        const result = originalNavigateTo(sectionId);
+        if (sectionId === 'analytics') {
+            setTimeout(loadAnalytics, 500);
+        }
+        return result;
+    };
+    </script>
     
     <!-- Emergency keyboard shortcut: Ctrl+L to show login -->
     <script>
+    // Demo Modal Functions - removed duplicate definitions
+    
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'l') {
             e.preventDefault();
@@ -2076,7 +2998,7 @@
     
     .main-content {
         height: 100vh;
-        width: 100vw;
+        width: 100%;
         margin: 0;
         padding: 0;
         overflow-y: auto;
@@ -2084,12 +3006,12 @@
     }
     
     .main-content.no-sidebar {
-        width: 100vw;
+        width: 100%;
         margin-left: 0;
     }
     
     .main-content:not(.no-sidebar) {
-        width: calc(100vw - 280px);
+        width: calc(100% - 280px);
         margin-left: 280px;
     }
     
@@ -2938,7 +3860,8 @@
         return strength;
     }
     </script>
-    <script src="js/document-extraction.js?v=3"></script>
+    <script src="js/document-extraction-real.js?v=3"></script>
+    <script src="js/admin-panel.js"></script>
     
     <!-- Immediate Navigation Function -->
     <script>
@@ -3127,26 +4050,26 @@
 body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100vw !important;
+    width: 100% !important;
     overflow-x: hidden !important;
 }
 
 .main-content {
-    width: 100vw !important;
+    width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
 /* PERFECT SECTION SPACING */
 #welcome, .content-section {
-    width: calc(100vw - 2rem) !important;
+    width: calc(100% - 2rem) !important;
     margin: 0 1rem !important;
     padding: 1rem !important;
 }
 
 /* HERO AND FEATURE SECTIONS - LANDING PAGE ONLY */
 #welcome .hero-section, #welcome .features-section, #welcome .how-it-works-section, #welcome .live-monitor-section, #welcome .journey-section {
-    width: calc(100vw - 2rem) !important;
+    width: calc(100% - 2rem) !important;
     margin: 2rem 1rem !important;
     padding: 2rem 1rem !important;
     background: rgba(244, 114, 182, 0.06) !important;
@@ -3187,3 +4110,112 @@ body {
     border-radius: 4px !important;
 }
 </style>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: none; border-radius: 15px; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(236, 72, 153, 0.2); padding: 1.5rem;">
+                    <h5 class="modal-title" style="color: #831843; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-key" style="color: #ec4899;"></i>
+                        Reset Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 2rem;">
+                    <p style="color: #9d174d; margin-bottom: 1.5rem;">Enter your email address and we'll send you a link to reset your password.</p>
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="forgotEmail" style="display: block; color: #831843; font-weight: 500; margin-bottom: 0.5rem;">Email Address</label>
+                            <input type="email" id="forgotEmail" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; background: rgba(236, 72, 153, 0.05); color: #831843; font-size: 0.9rem;" placeholder="Enter your email">
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="padding: 0.75rem 1.5rem; border-radius: 6px; border-color: rgba(236, 72, 153, 0.5); color: #be185d;">Cancel</button>
+                            <button type="submit" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600;">Send Reset Link</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password visibility toggle functions
+        function toggleLoginPassword() {
+            const passwordField = document.getElementById('loginPassword');
+            const toggleIcon = document.getElementById('loginPasswordToggle');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function toggleRegisterPassword() {
+            const passwordField = document.getElementById('registerPassword');
+            const toggleIcon = document.getElementById('registerPasswordToggle');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function toggleConfirmPassword() {
+            const passwordField = document.getElementById('registerConfirmPassword');
+            const toggleIcon = document.getElementById('confirmPasswordToggle');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Forgot password modal function
+        function showForgotPasswordModal() {
+            const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+            modal.show();
+        }
+
+        // Handle forgot password form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+            if (forgotPasswordForm) {
+                forgotPasswordForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const email = document.getElementById('forgotEmail').value;
+                    
+                    if (!email) {
+                        alert('Please enter your email address.');
+                        return;
+                    }
+
+                    // Here you would typically send a request to your backend
+                    // For now, we'll just show a success message
+                    alert('Password reset link has been sent to your email address.');
+                    
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                    modal.hide();
+                    
+                    // Clear the form
+                    forgotPasswordForm.reset();
+                });
+            }
+        });
+    </script>

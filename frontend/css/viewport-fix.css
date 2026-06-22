@@ -1,0 +1,46 @@
+/* Viewport width fix - eliminate 100vw to prevent scrollbar shift */
+
+html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Replace 100vw with 100% for all full-width sections */
+#welcome,
+#login,
+#register,
+.full-page-section,
+.main-content {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Fix containers to use 100% instead of 100vw */
+.container-fluid,
+.section-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding-left: clamp(1rem, 4vw, 3rem) !important;
+    padding-right: clamp(1rem, 4vw, 3rem) !important;
+    box-sizing: border-box !important;
+}
+
+/* Symmetric hero section */
+.hero-section {
+    width: 100% !important;
+    max-width: 1600px !important;
+    margin: 0 auto !important;
+    padding-left: clamp(1rem, 4vw, 3rem) !important;
+    padding-right: clamp(1rem, 4vw, 3rem) !important;
+    box-sizing: border-box !important;
+}
+
+.hero-content,
+.hero-visual {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}

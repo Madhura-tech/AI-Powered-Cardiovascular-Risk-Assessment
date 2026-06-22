@@ -76,6 +76,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.handleRegister = handleRegister;
         window.showNotification = showNotification;
         
+        // Add hash change listener
+        window.addEventListener('hashchange', handleHashChange);
+        window.addEventListener('load', handleHashChange);
+        
         // Check backend connectivity first
         checkBackendStatus();
         
@@ -95,7 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('🔄 URL contains login params, showing login page');
                 navigateTo('login');
             } else {
-                navigateTo('welcome');
+                // Check hash or default to welcome
+                const hash = window.location.hash.substring(1) || 'welcome';
+                navigateTo(hash);
             }
         }
         
@@ -121,13 +127,22 @@ function navigateTo(sectionId) {
     console.log('🔄 Navigation requested to:', sectionId);
     console.log('🔑 Current auth state:', { authToken: !!authToken, currentUser: !!currentUser });
     
+    // Update URL hash
+    window.location.hash = sectionId;
+    
     // Block protected routes if not authenticated
-    const protectedRoutes = ['dashboard', 'predict', 'documents', 'history', 'profile', 'medical-report'];
+    const protectedRoutes = ['dashboard', 'predict', 'documents', 'history', 'profile', 'medical-report', 'analytics', 'nearby-hospitals', 'admin'];
     const publicRoutes = ['welcome', 'login', 'register'];
     
     if (protectedRoutes.includes(sectionId) && !authToken) {
         console.log('🚫 Protected route requires authentication, redirecting to login');
         window.navigateTo('login');
+        return false;
+    }
+    
+    if (sectionId === 'admin' && currentUser?.role !== 'admin') {
+        showNotification('Access denied. Admin only.', 'error');
+        navigateTo('dashboard');
         return false;
     }
     
@@ -179,6 +194,12 @@ function navigateTo(sectionId) {
         }, 100);
     }
     
+    if (sectionId === 'admin' && currentUser) {
+        setTimeout(() => {
+            if (typeof adminShowTab === 'function') adminShowTab('dashboard');
+        }, 100);
+    }
+    
     if (sectionId === 'history' && currentUser) {
         setTimeout(() => {
             loadPredictionHistory();
@@ -191,13 +212,141 @@ function navigateTo(sectionId) {
         }, 100);
     }
     
+    if (sectionId === 'nearby-hospitals') {
+        setTimeout(() => {
+            if (typeof initializeNearbyHospitals === 'function') {
+                initializeNearbyHospitals();
+            }
+            if (typeof loadHospitalCards === 'function') {
+                loadHospitalCards();
+            }
+        }, 100);
+    }
+    
     return true;
+}
+
+// Hash change handler
+function handleHashChange() {
+    const hash = window.location.hash.substring(1) || (authToken ? 'dashboard' : 'welcome');
+    console.log('🔗 Hash changed to:', hash);
+    
+    // Call navigateToSection directly to avoid infinite loop
+    navigateToSection(hash);
+}
+
+// Navigate without updating hash (to avoid loops)
+function navigateToSection(sectionId) {
+    console.log('🔄 Direct navigation to:', sectionId);
+    
+    // Block protected routes if not authenticated
+    const protectedRoutes = ['dashboard', 'predict', 'documents', 'history', 'profile', 'medical-report', 'analytics', 'nearby-hospitals', 'admin'];
+    const publicRoutes = ['welcome', 'login', 'register'];
+    
+    if (protectedRoutes.includes(sectionId) && !authToken) {
+        console.log('🚫 Protected route requires authentication, redirecting to login');
+        window.location.hash = 'login';
+        return false;
+    }
+    
+    if (sectionId === 'admin' && currentUser?.role !== 'admin') {
+        window.location.hash = 'dashboard';
+        return false;
+    }
+    
+    // Hide all sections
+    const allSections = document.querySelectorAll('.content-section');
+    allSections.forEach(section => {
+        section.style.display = 'none';
+        section.classList.add('d-none');
+    });
+    
+    // Show target section
+    const targetSection = document.getElementById(sectionId);
+    if (!targetSection) {
+        console.error('❌ Section not found:', sectionId);
+        return false;
+    }
+    
+    console.log('🎯 Showing section:', sectionId);
+    targetSection.style.display = 'block';
+    targetSection.classList.remove('d-none');
+    targetSection.style.visibility = 'visible';
+    targetSection.style.opacity = '1';
+    
+    // Layout management
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (publicRoutes.includes(sectionId)) {
+        if (sidebar) sidebar.style.display = 'none';
+        if (mainContent) {
+            mainContent.style.marginLeft = '0';
+            mainContent.style.width = '100vw';
+            mainContent.classList.add('no-sidebar');
+        }
+    } else {
+        if (sidebar) sidebar.style.display = 'flex';
+        if (mainContent) {
+            mainContent.style.marginLeft = '280px';
+            mainContent.style.width = 'calc(100vw - 280px)';
+            mainContent.classList.remove('no-sidebar');
+        }
+    }
+    
+    // Load section-specific data
+    if (sectionId === 'dashboard' && currentUser) {
+        setTimeout(() => {
+            loadDashboardData();
+        }, 100);
+    }
+    
+    if (sectionId === 'history' && currentUser) {
+        setTimeout(() => {
+            loadPredictionHistory();
+        }, 100);
+    }
+    
+    if (sectionId === 'documents') {
+        setTimeout(() => {
+            loadUserDocuments();
+        }, 100);
+    }
+    
+    if (sectionId === 'nearby-hospitals') {
+        setTimeout(() => {
+            if (typeof initializeNearbyHospitals === 'function') {
+                initializeNearbyHospitals();
+            }
+            if (typeof loadHospitalCards === 'function') {
+                loadHospitalCards();
+            }
+        }, 100);
+    }
+    
+    return true;
+}
+
+// Scroll to demo function for Watch Demo button
+function scrollToDemo() {
+    console.log('🎬 Scrolling to demo section');
+    
+    // For now, navigate to login since there's no specific demo section
+    // You can modify this to scroll to a specific demo section if you add one
+    navigateTo('login');
+    
+    // Alternative: scroll to features section if it exists
+    const featuresSection = document.querySelector('.features-section');
+    if (featuresSection) {
+        featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 // Make functions globally available immediately
 window.navigateTo = navigateTo;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
+window.scrollToDemo = scrollToDemo;
 
 function setupEventListeners() {
     console.log('🔍 Setting up event listeners...');
@@ -498,6 +647,12 @@ function updateUIForLoggedInUser() {
     const sidebarUserName = document.getElementById('sidebarUserName');
     if (sidebarUserName) {
         sidebarUserName.textContent = currentUser.username;
+    }
+    
+    // Show admin link if admin
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink && currentUser.role === 'admin') {
+        adminLink.classList.remove('d-none');
     }
     
     // Update dashboard username
@@ -1294,6 +1449,9 @@ function generateMedicalReport(predictionData, inputData) {
         <div style="text-align: center; margin: 3rem 0; animation: slideInUp 0.8s ease-out 1.7s both;">
             <button onclick="generatePDFReport()" style="background: linear-gradient(135deg, #f8bbd9, #ec4899); border: none; color: white; padding: 1rem 2rem; border-radius: 25px; font-weight: 600; margin-right: 1rem; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 25px rgba(236, 72, 153, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                 <i class="fas fa-file-pdf"></i> Generate PDF Report
+            </button>
+            <button onclick="shareReportViaEmail()" style="background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; color: white; padding: 1rem 2rem; border-radius: 25px; font-weight: 600; margin-right: 1rem; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 25px rgba(6, 182, 212, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                <i class="fas fa-envelope"></i> Share via Email
             </button>
             <button onclick="closeReport()" style="background: linear-gradient(135deg, #ec4899, #be185d); border: none; color: white; padding: 1rem 2rem; border-radius: 25px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 25px rgba(236, 72, 153, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                 Close Report
@@ -2284,7 +2442,32 @@ window.clearSearch = clearSearch;
 window.initHistoryFilters = initHistoryFilters;
 window.useParsedDataForPrediction = useParsedDataForPrediction;
 window.fillPredictionFormWithParsedData = fillPredictionFormWithParsedData;
+window.scrollToDemo = scrollToDemo;
+window.shareReportViaEmail = shareReportViaEmail;
 
-console.log('✅ App JavaScript loaded successfully with enhanced filtering');llPredictionFormWithParsedData = fillPredictionFormWithParsedData;
+function shareReportViaEmail() {
+    const patientName = window.currentPredictionInput?.patientName || window.currentPredictionInput?.patient_name || 'Patient';
+    const riskLevel = window.currentPredictionResult?.risk_category || 'Unknown';
+    const confidence = window.currentPredictionResult?.confidence_score ? (window.currentPredictionResult.confidence_score * 100).toFixed(1) : 'N/A';
+    const reportDate = new Date().toLocaleDateString();
+    
+    const subject = encodeURIComponent(`Heart Disease Risk Assessment Report - ${patientName}`);
+    const body = encodeURIComponent(
+`Dear Healthcare Provider,
+
+Please find the cardiovascular risk assessment summary for ${patientName}:
+
+Risk Level: ${riskLevel}
+Confidence: ${confidence}%
+Report Date: ${reportDate}
+
+This AI-powered assessment was generated using our Heart Disease Prediction System. For detailed analysis and recommendations, please refer to the complete PDF report.
+
+Best regards,
+Heart Disease Prediction System`
+    );
+    
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
 
 console.log('✅ App JavaScript loaded successfully with enhanced filtering');

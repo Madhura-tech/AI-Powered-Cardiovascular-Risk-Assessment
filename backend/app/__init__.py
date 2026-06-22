@@ -61,10 +61,26 @@ def create_app():
     from app.views.auth import register_auth_routes
     from app.views.documents import register_document_routes
     from app.views.reports import register_report_routes
+    from app.views.chatbot import chatbot_bp
+    from app.views.export import export_bp
+    from app.views.notifications import notify_bp
+    from app.views.data_export import data_export_bp
+    from app.views.analytics import analytics_bp
+    from app.views.ai_health_tools import ai_tools_bp
+    from app.views.admin import admin_bp
+    
     register_routes(api)
     register_auth_routes(api)
     register_document_routes(api)
     register_report_routes(api)
+    
+    app.register_blueprint(chatbot_bp, url_prefix='/api')
+    app.register_blueprint(export_bp)
+    app.register_blueprint(notify_bp)
+    app.register_blueprint(data_export_bp)
+    app.register_blueprint(analytics_bp, url_prefix='/api')
+    app.register_blueprint(ai_tools_bp, url_prefix='/api/ai-tools')
+    app.register_blueprint(admin_bp)
     
     # Health check endpoint
     @app.route('/health')

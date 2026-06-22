@@ -1,824 +1,691 @@
 import os
+import re
+import cv2
+import numpy as np
+import pytesseract          # import first
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 from PIL import Image
+from pdf2image import convert_from_path
 import PyPDF2
-import io
-import json
+import joblib
 from datetime import datetime
-try:
-    import pytesseract
-    TESSERACT_AVAILABLE = True
-except ImportError:
-    TESSERACT_AVAILABLE = False
-    print("Warning: pytesseract not installed. Install with: pip install pytesseract")
 
-class OCRService:
-    def __init__(self):
-        self.tesseract_configured = False
-        # Configure Tesseract path if available
-        if TESSERACT_AVAILABLE:
-            self.tesseract_configured = self._configure_tesseract()
+
+UPLOAD_DIR = os.path.join("uploads", "documents")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# ----------------------- Universal OCR -----------------------
+class UniversalOCR:
+    def __init__(self, poppler_path=None):
+        self.poppler_path = poppler_path
+    def save_file(self, file_storage):
+        filename = file_storage.filename.replace(" ", "_")
+        path = os.path.join(UPLOAD_DIR, filename)
+        file_storage.save(path)
+        return path
+
+    def _pdf_to_images(self, pdf_path, dpi=300):
+        if self.poppler_path:
+            pages = convert_from_path(pdf_path, dpi=dpi, poppler_path=self.poppler_path)
         else:
-            print("Warning: pytesseract not installed. OCR will use fallback methods.")
-    
-    def _configure_tesseract(self):
-        """Configure Tesseract OCR executable path"""
-        import os
-        import subprocess
-        
-        # Try common Windows installation paths
-        possible_paths = [
-            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-            r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
-            r'C:\Users\{username}\AppData\Local\Programs\Tesseract-OCR\tesseract.exe',
-            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-            'tesseract'  # Try system PATH
-        ]
-        
-        # Expand username in paths
-        username = os.getenv('USERNAME', 'user')
-        expanded_paths = [path.format(username=username) for path in possible_paths]
-        
-        for path in expanded_paths:
-            try:
-                if path == 'tesseract':
-                    # Test if tesseract is in PATH
-                    result = subprocess.run(['tesseract', '--version'], 
-                                          capture_output=True, text=True, timeout=5)
-                    if result.returncode == 0:
-                        print(f"Tesseract found in system PATH")
-                        return True
-                elif os.path.exists(path):
-                    pytesseract.pytesseract.tesseract_cmd = path
-                    print(f"Tesseract found at: {path}")
-                    return True
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
-                continue
-        
-        print("Tesseract OCR not found. Using enhanced fallback extraction methods.")
-        return False
-    
-    def extract_text_from_image(self, image_path):
-        """Extract text from image using Tesseract OCR with enhanced preprocessing"""
+            pages = convert_from_path(pdf_path, dpi=dpi)
+        out_paths = []
+        for i, page in enumerate(pages):
+            temp = os.path.join(UPLOAD_DIR, f"page_{i}.jpg")
+            page.save(temp, "JPEG")
+            out_paths.append(temp)
+        return out_paths
+
+    def deskew(self, image):
         try:
-            # Load and preprocess image for better OCR
-            image = Image.open(image_path)
-            
-            # Convert to RGB if needed
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Enhance image for better OCR
-            image = self._preprocess_image(image)
-            
-            extracted_text = ""
-            
-            if TESSERACT_AVAILABLE and self.tesseract_configured:
-                try:
-                    # Try multiple OCR configurations for better results
-                    configs = [
-                        '--psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,:/()-',
-                        '--psm 4 -c preserve_interword_spaces=1',
-                        '--psm 3',
-                        '--psm 1',
-                        '--psm 11',  # Sparse text
-                        '--psm 12'   # Sparse text with OSD
-                    ]
-                    
-                    for config in configs:
-                        try:
-                            text = pytesseract.image_to_string(image, config=config, lang='eng')
-                            if text and len(text.strip()) > len(extracted_text.strip()):
-                                extracted_text = text
-                                print(f"OCR successful with config: {config}")
-                                print(f"Extracted text preview: {text[:100]}...")
-                        except Exception as config_error:
-                            print(f"Config {config} failed: {config_error}")
-                            continue
-                    
-                    if extracted_text.strip():
-                        print(f"OCR extracted {len(extracted_text)} characters")
-                        return extracted_text, None
-                    else:
-                        print("OCR returned empty text, using fallback")
-                        
-                except Exception as ocr_error:
-                    print(f"OCR processing failed: {ocr_error}")
-            
-            # If OCR fails or returns empty, try enhanced fallback methods
-            print("Using enhanced fallback extraction methods...")
-            return self._extract_with_fallback_methods(image_path, image)
-                
-        except Exception as e:
-            return None, f"Image processing error: {str(e)}"
-    
-    def _preprocess_image(self, image):
-        """Preprocess image for better OCR results"""
-        try:
-            from PIL import ImageEnhance, ImageFilter
-            
-            # Resize if too small
-            width, height = image.size
-            if width < 800 or height < 600:
-                scale = max(800/width, 600/height)
-                new_size = (int(width * scale), int(height * scale))
-                image = image.resize(new_size, Image.Resampling.LANCZOS)
-            
-            # Enhance contrast and sharpness
-            enhancer = ImageEnhance.Contrast(image)
-            image = enhancer.enhance(1.5)
-            
-            enhancer = ImageEnhance.Sharpness(image)
-            image = enhancer.enhance(1.2)
-            
-            # Apply slight blur to reduce noise
-            image = image.filter(ImageFilter.MedianFilter(size=3))
-            
-            return image
-        except:
-            return image
-    
-    def _extract_with_fallback_methods(self, image_path, image=None):
-        """Enhanced fallback methods when OCR fails"""
-        try:
-            filename = os.path.basename(image_path).lower()
-            print(f"Processing image: {filename}")
-            
-            # Try to analyze image characteristics for better extraction
-            if image:
-                width, height = image.size
-                print(f"Image dimensions: {width}x{height}")
-                
-                # Try simple template matching for common medical forms
-                extracted_text = self._template_based_extraction(image, filename)
-                if extracted_text:
-                    return extracted_text, None
-            
-            # Generate realistic medical data based on filename patterns
-            import random
-            random.seed(hash(filename) % 1000)  # Consistent results for same file
-            
-            # Detect document type from filename
-            if any(term in filename for term in ['ecg', 'ekg', 'cardiac', 'heart']):
-                # Cardiac-focused document
-                age = random.randint(45, 75)
-                bp_base = 140 if age > 55 else 120
-                chol_base = 220 if age > 55 else 180
-            elif any(term in filename for term in ['lab', 'blood', 'test']):
-                # Laboratory report
-                age = random.randint(30, 70)
-                bp_base = 130
-                chol_base = 200
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            coords = np.column_stack(np.where(gray < 255))
+            if len(coords) < 10:
+                return image
+            angle = cv2.minAreaRect(coords)[-1]
+            if angle < -45:
+                angle = -(90 + angle)
             else:
-                # General medical document
-                age = random.randint(35, 65)
-                bp_base = 125
-                chol_base = 190
-            
-            # Generate correlated values
-            bp = bp_base + random.randint(-20, 30)
-            chol = chol_base + random.randint(-40, 60)
-            hr = random.randint(120, 170)
-            fbs = random.randint(85, 135)
-            oldpeak = round(random.uniform(0.2, 2.5), 1)
-            
-            # Create comprehensive medical report
-            medical_text = f"""
-COMPREHENSIVE CARDIAC ASSESSMENT REPORT
+                angle = -angle
+            (h, w) = image.shape[:2]
+            M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1)
+            return cv2.warpAffine(image, M, (w, h))
+        except Exception:
+            return image
 
-Patient Demographics:
-Age: {age} years
-Sex: {'Male' if random.choice([True, False]) else 'Female'}
+    def preprocess_image(self, path):
+        img = cv2.imread(path)
+        if img is None:
+            raise RuntimeError("Could not read image for preprocessing")
+        img = self.deskew(img)
+        h, w = img.shape[:2]
+        if max(h, w) < 1600:
+            img = cv2.resize(img, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.bilateralFilter(gray, 9, 75, 75)
+        kernel = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
+        gray = cv2.filter2D(gray, -1, kernel)
+        try:
+            th = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY, 31, 9)
+        except Exception:
+            _, th = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        return th
 
-Vital Signs and Measurements:
-Resting Blood Pressure: {bp} mmHg
-Serum Cholesterol: {chol} mg/dL
-Fasting Blood Sugar: {fbs} mg/dL
-Max Heart Rate Achieved: {hr} bpm
-
-Cardiac Evaluation:
-Chest Pain Type: {random.choice(['Typical Angina', 'Atypical Angina', 'Non-anginal Pain', 'Asymptomatic'])}
-Resting ECG Result: {random.choice(['Normal', 'ST-T Wave Abnormality', 'Left Ventricular Hypertrophy'])}
-Exercise-Induced Angina: {random.choice(['Yes', 'No'])}
-ST Depression (Exercise ECG): {oldpeak} mm
-Slope of Peak Exercise ST Segment: {random.choice(['Upsloping', 'Flat', 'Downsloping'])}
-Major Vessels (Fluoroscopy): {random.randint(0, 3)} vessels
-Thalassemia Test: {random.choice(['Normal', 'Fixed Defect', 'Reversible Defect'])}
-
-Clinical Notes:
-- Patient presents with cardiovascular risk factors
-- Comprehensive evaluation completed
-- Follow-up recommended as per guidelines
-            """
-            
-            print(f"Generated enhanced medical report for: {filename}")
-            return medical_text, None
-            
-        except Exception as e:
-            print(f"Fallback extraction error: {e}")
-            return "Medical document detected. Please ensure image is clear and contains readable text.", f"Extraction error: {str(e)}"
-    
-    def _template_based_extraction(self, image, filename):
-        """Try to extract text using template matching for common medical forms"""
-        try:
-            # This is a simplified template matching approach
-            # In production, you could use computer vision techniques
-            
-            # For now, return None to use the fallback generation
-            return None
-            
-        except Exception as e:
-            print(f"Template matching failed: {e}")
-            return None
-    
-    def _extract_hardcoded_values(self, text, parsed_data):
-        """Extract hardcoded values for known clinical parameter formats"""
-        try:
-            # Check if this looks like a clinical parameters document
-            if any(term in text for term in ['clinical parameters', 'parameter', 'value', 'age', 'sex']):
-                print("Detected clinical parameters format - using hardcoded extraction")
-                
-                # Image 1: Clinical Parameters table (54 years, Female)
-                if '54' in text and 'female' in text:
-                    parsed_data.update({
-                        'age': 54, 'sex': 0, 'cp': 1, 'trestbps': 135, 'chol': 215,
-                        'fbs': 0, 'restecg': 0, 'thalach': 148, 'exang': 0,
-                        'oldpeak': 1.0, 'slope': 2, 'ca': 0, 'thal': 2
-                    })
-                    print("✓ Extracted Image 1 data (54F)")
-                    return True
-                
-                # Image 2: Dark table (45 years, Male)
-                elif '45' in text:
-                    parsed_data.update({
-                        'age': 45, 'sex': 1, 'cp': 2, 'trestbps': 130, 'chol': 250,
-                        'fbs': 1, 'restecg': 0, 'thalach': 150, 'exang': 0,
-                        'oldpeak': 1.2, 'slope': 1, 'ca': 0, 'thal': 3
-                    })
-                    print("✓ Extracted Image 2 data (45M)")
-                    return True
-                
-                # Image 3: Dark table (58 years) or BP 145 + Chol 310
-                elif '58' in text or ('145' in text and '310' in text):
-                    parsed_data.update({
-                        'age': 58, 'sex': 0, 'cp': 1, 'trestbps': 145, 'chol': 310,
-                        'fbs': 1, 'restecg': 2, 'thalach': 120, 'exang': 1,
-                        'oldpeak': 2.5, 'slope': 2, 'ca': 2, 'thal': 2
-                    })
-                    print("✓ Extracted Image 3 data (58F, BP:145, Chol:310)")
-                    return True
-                
-                # Image 4: Clinical Parameters with magnifying glass (58 years, Male)
-                elif 'clinical parameters' in text and ('58' in text or 'male' in text):
-                    parsed_data.update({
-                        'age': 58, 'sex': 1, 'cp': 0, 'trestbps': 150, 'chol': 245,
-                        'fbs': 1, 'restecg': 1, 'thalach': 138, 'exang': 1,
-                        'oldpeak': 2.3, 'slope': 1, 'ca': 1, 'thal': 3
-                    })
-                    print("✓ Extracted Image 4 data (58M)")
-                    return True
-            
-            return False
-            
-        except Exception as e:
-            print(f"Hardcoded extraction error: {e}")
-            return False
-    
-    def extract_text_from_pdf(self, pdf_path):
-        """Extract text from PDF"""
-        try:
-            text = ""
-            with open(pdf_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                for page_num, page in enumerate(pdf_reader.pages):
-                    page_text = page.extract_text()
-                    if page_text:
-                        text += f"Page {page_num + 1}:\n{page_text}\n\n"
-            
-            if text.strip():
-                print(f"Extracted PDF text: {text[:200]}...")  # Debug output
-                return text.strip(), None
-            else:
-                # If no text found, return a message
-                return "No text could be extracted from this PDF. The document may be image-based.", None
-        except Exception as e:
-            return None, f"PDF processing error: {str(e)}"
-    
-    def _pdf_to_ocr(self, pdf_path):
-        """Convert PDF to image and apply OCR (simplified version)"""
-        try:
-            # This is a simplified version - in production, you'd use pdf2image
-            return "OCR from PDF not fully implemented", None
-        except Exception as e:
-            return None, f"PDF OCR error: {str(e)}"
-    
-    def process_document(self, file_path, file_type):
-        """Main method to process document based on type"""
-        if file_type.lower() == 'pdf':
-            return self.extract_text_from_pdf(file_path)
-        elif file_type.lower() in ['jpg', 'jpeg', 'png']:
-            return self.extract_text_from_image(file_path)
-        else:
-            return None, "Unsupported file type"
-    
-    def parse_medical_data(self, text):
-        """Parse heart disease prediction parameters from extracted text"""
-        import re
+    def run_tesseract(self, image_array):
+        best_text = ""
+        best_tokens = []
         
-        parsed_data = {
-            'age': None, 'sex': None, 'cp': None, 'trestbps': None, 'chol': None,
-            'fbs': None, 'restecg': None, 'thalach': None, 'exang': None,
-            'oldpeak': None, 'slope': None, 'ca': None, 'thal': None
-        }
-        
-        print(f"\n=== OCR TEXT ===\n{text}\n================\n")
-        text_lower = text.lower()
-        
-        # Direct extraction for the specific medical report format
-        if self._extract_from_medical_report(text_lower, parsed_data):
-            return parsed_data
-        
-        # Hardcoded extraction for known clinical parameter images
-        if self._extract_hardcoded_values(text_lower, parsed_data):
-            return parsed_data
-        
-        # Enhanced detection for clinical parameters documents
-        if any(term in text_lower for term in ['clinical parameters', 'cardiac assessment', 'medical report']):
-            print("Detected structured clinical document - using enhanced extraction")
-            # Try to extract actual values from the document first
-            extracted_params = self._extract_structured_data(text)
-            if extracted_params:
-                return extracted_params
-        
-        # Enhanced comprehensive patterns for any clinical document format
-        clinical_patterns = {
-            'age': [
-                r'age[:\s\|\-]*([0-9]{1,3})\s*years?',
-                r'([0-9]{1,3})\s*years?\s*old',
-                r'age\s*[:\-]?\s*([0-9]{1,3})',
-                r'\bage\s*([0-9]{1,3})\b',
-                r'patient.*?([0-9]{1,3})\s*years?',
-                r'([0-9]{1,3})\s*yr',
-                r'([0-9]{1,3})\s*y\.?o\.?'
-            ],
-            'sex': [
-                r'sex[:\s\|\-]*(male|female)',
-                r'gender[:\s\|\-]*(male|female)',
-                r'sex\s*[:\-]?\s*(male|female)',
-                r'gender\s*[:\-]?\s*(male|female)',
-                r'\b(male|female)\b',
-                r'm/f[:\s]*([mf])',
-                r'patient.*?(male|female)'
-            ],
-            'trestbps': [
-                r'resting\s*blood\s*pressure[:\s\|\-]*([0-9]{2,3})\s*mmhg',
-                r'blood\s*pressure[:\s\|\-]*([0-9]{2,3})\s*mmhg',
-                r'systolic[:\s\|\-]*([0-9]{2,3})\s*mmhg',
-                r'bp[:\s\|\-]*([0-9]{2,3})\s*mmhg',
-                r'resting\s*bp[:\s\|\-]*([0-9]{2,3})',
-                r'([0-9]{2,3})\s*mmhg',
-                r'([0-9]{2,3})/[0-9]{2,3}\s*mmhg',
-                r'pressure[:\s]*([0-9]{2,3})'
-            ],
-            'chol': [
-                r'serum\s*cholesterol[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'cholesterol[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'total\s*cholesterol[:\s\|\-]*([0-9]{2,3})',
-                r'chol[:\s\|\-]*([0-9]{2,3})',
-                r'([0-9]{2,3})\s*mg[/\\]?dl.*cholesterol',
-                r'cholesterol.*?([0-9]{2,3})\s*mg',
-                r'([0-9]{2,3})\s*mg[/\\]?dl'
-            ],
-            'fbs': [
-                r'fasting\s*blood\s*sugar[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'fasting\s*glucose[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'blood\s*sugar[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'glucose[:\s\|\-]*([0-9]{2,3})\s*mg[/\\]?dl',
-                r'fbs[:\s\|\-]*([0-9]{2,3})',
-                r'blood\s*glucose[:\s]*([0-9]{2,3})'
-            ],
-            'thalach': [
-                r'max\s*heart\s*rate[:\s\|\-]*([0-9]{2,3})\s*bpm',
-                r'maximum\s*heart\s*rate[:\s\|\-]*([0-9]{2,3})\s*bpm',
-                r'heart\s*rate[:\s\|\-]*([0-9]{2,3})\s*bpm',
-                r'max\s*hr[:\s\|\-]*([0-9]{2,3})',
-                r'hr\s*max[:\s\|\-]*([0-9]{2,3})',
-                r'([0-9]{2,3})\s*bpm',
-                r'pulse[:\s]*([0-9]{2,3})'
-            ],
-            'cp': [
-                r'chest\s*pain\s*type[:\s\|\-]*(typical\s*angina|atypical\s*angina|non[\-\s]*anginal|asymptomatic)',
-                r'chest\s*pain[:\s\|\-]*(typical|atypical|non[\-\s]*anginal|asymptomatic)',
-                r'pain\s*type[:\s\|\-]*(typical|atypical|non[\-\s]*anginal|asymptomatic)',
-                r'cp[:\s\|\-]*(typical|atypical|non[\-\s]*anginal|asymptomatic)',
-                r'(typical\s*angina|atypical\s*angina|non[\-\s]*anginal\s*pain|asymptomatic)',
-                r'angina[:\s]*(typical|atypical|none)'
-            ],
-            'restecg': [
-                r'resting\s*ecg[:\s\|\-]*(normal|st[\-\s]*t\s*abnormality|lv\s*hypertrophy)',
-                r'ecg[:\s\|\-]*(normal|abnormal|st[\-\s]*t|hypertrophy)',
-                r'resting.*?ecg[:\s\|\-]*(normal|abnormal)',
-                r'electrocardiogram[:\s\|\-]*(normal|abnormal)',
-                r'ecg.*?result[:\s\|\-]*(normal|abnormal)',
-                r'rest\s*ecg[:\s]*(normal|abnormal)'
-            ],
-            'exang': [
-                r'exercise[\s\-]*induced[\s\-]*angina[:\s\|\-]*(yes|no)',
-                r'exercise[\s\-]*angina[:\s\|\-]*(yes|no)',
-                r'angina[\s\-]*exercise[:\s\|\-]*(yes|no)',
-                r'exang[:\s\|\-]*(yes|no)',
-                r'exercise.*?angina[:\s]*(present|absent|yes|no)'
-            ],
-            'oldpeak': [
-                r'st\s*depression[:\s\|\-]*([0-9\.]+)\s*mm',
-                r'st[\s\-]*depression[:\s\|\-]*([0-9\.]+)',
-                r'depression[:\s\|\-]*([0-9\.]+)\s*mm',
-                r'oldpeak[:\s\|\-]*([0-9\.]+)',
-                r'st[:\s]*([0-9\.]+)\s*mm',
-                r'([0-9\.]+)\s*mm.*depression'
-            ],
-            'slope': [
-                r'slope[:\s\|\-]*(upsloping|flat|downsloping)',
-                r'st\s*slope[:\s\|\-]*(upsloping|flat|downsloping)',
-                r'peak.*?slope[:\s\|\-]*(upsloping|flat|downsloping)',
-                r'(upsloping|flat|downsloping).*slope',
-                r'slope.*?(up|flat|down)'
-            ],
-            'ca': [
-                r'major\s*vessels[:\s\|\-]*([0-4])',
-                r'vessels[:\s\|\-]*([0-4])',
-                r'fluoroscopy[:\s\|\-]*([0-4])',
-                r'ca[:\s\|\-]*([0-4])',
-                r'coronary.*?vessels[:\s]*([0-4])',
-                r'number.*?vessels[:\s]*([0-4])'
-            ],
-            'thal': [
-                r'thalassemia[:\s\|\-]*(normal|fixed\s*defect|reversible\s*defect)',
-                r'thal[:\s\|\-]*(normal|fixed|reversible)',
-                r'thallium[:\s\|\-]*(normal|fixed|reversible)',
-                r'(reversible\s*defect|fixed\s*defect|normal).*thal',
-                r'thalassemia.*?(normal|abnormal|defect)'
-            ]
-        }
-        
-        # Enhanced OCR extraction for any clinical document
-        print("Processing OCR text for medical parameter extraction...")
-        
-        # Apply clinical patterns with enhanced value conversion
-        for param, patterns in clinical_patterns.items():
-            for pattern in patterns:
-                match = re.search(pattern, text_lower, re.IGNORECASE)
-                if match:
-                    value = match.group(1).strip().lower()
-                    print(f"Clinical pattern found for {param}: '{value}'")
-                    
+        for psm in [3, 6]:
+            config = f"--oem 3 --psm {psm} -c preserve_interword_spaces=1"
+            pil = Image.fromarray(image_array)
+            text = pytesseract.image_to_string(pil, config=config)
+            data = pytesseract.image_to_data(pil, config=config, output_type=pytesseract.Output.DICT)
+            tokens = []
+            for i in range(len(data["text"])):
+                if data["text"][i].strip():
                     try:
-                        # Enhanced value conversion with error handling
-                        if param == 'age':
-                            age_val = int(re.findall(r'\d+', value)[0])
-                            if 18 <= age_val <= 100:
-                                parsed_data[param] = age_val
-                        elif param == 'sex':
-                            if 'm' in value or 'male' in value:
-                                parsed_data[param] = 1
-                            elif 'f' in value or 'female' in value:
-                                parsed_data[param] = 0
-                        elif param in ['trestbps', 'chol', 'thalach']:
-                            num_val = int(re.findall(r'\d+', value)[0])
-                            # Validate ranges
-                            if param == 'trestbps' and 80 <= num_val <= 200:
-                                parsed_data[param] = num_val
-                            elif param == 'chol' and 100 <= num_val <= 400:
-                                parsed_data[param] = num_val
-                            elif param == 'thalach' and 60 <= num_val <= 220:
-                                parsed_data[param] = num_val
-                        elif param == 'fbs':
-                            fbs_val = int(re.findall(r'\d+', value)[0])
-                            parsed_data[param] = 1 if fbs_val > 120 else 0
-                        elif param == 'cp':
-                            cp_map = {
-                                'typical': 0, 'typical angina': 0,
-                                'atypical': 1, 'atypical angina': 1,
-                                'non-anginal': 2, 'non anginal': 2, 'nonanginal': 2,
-                                'asymptomatic': 3, 'none': 3
-                            }
-                            for key, val in cp_map.items():
-                                if key in value:
-                                    parsed_data[param] = val
-                                    break
-                        elif param == 'restecg':
-                            ecg_map = {
-                                'normal': 0,
-                                'st-t': 1, 'st t': 1, 'abnormal': 1, 'abnormality': 1,
-                                'lv': 2, 'hypertrophy': 2, 'left ventricular': 2
-                            }
-                            for key, val in ecg_map.items():
-                                if key in value:
-                                    parsed_data[param] = val
-                                    break
-                        elif param == 'exang':
-                            if 'yes' in value or 'present' in value:
-                                parsed_data[param] = 1
-                            elif 'no' in value or 'absent' in value:
-                                parsed_data[param] = 0
-                        elif param == 'oldpeak':
-                            peak_val = float(re.findall(r'\d+\.?\d*', value)[0])
-                            if 0.0 <= peak_val <= 10.0:
-                                parsed_data[param] = peak_val
-                        elif param == 'slope':
-                            slope_map = {
-                                'upsloping': 2, 'up': 2,
-                                'flat': 1,
-                                'downsloping': 0, 'down': 0
-                            }
-                            for key, val in slope_map.items():
-                                if key in value:
-                                    parsed_data[param] = val
-                                    break
-                        elif param == 'ca':
-                            ca_val = int(re.findall(r'\d+', value)[0])
-                            if 0 <= ca_val <= 4:
-                                parsed_data[param] = ca_val
-                        elif param == 'thal':
-                            thal_map = {
-                                'normal': 2,
-                                'fixed': 1, 'fixed defect': 1,
-                                'reversible': 3, 'reversible defect': 3
-                            }
-                            for key, val in thal_map.items():
-                                if key in value:
-                                    parsed_data[param] = val
-                                    break
-                        
-                        if parsed_data[param] is not None:
-                            print(f"✓ {param}: {parsed_data[param]}")
-                            break
-                    except (ValueError, IndexError) as e:
-                        print(f"Error converting {param} value '{value}': {e}")
-                        continue
+                        conf = float(data["conf"][i])
+                    except:
+                        conf = None
+                    tokens.append({
+                        "text": data["text"][i],
+                        "conf": conf,
+                        "bbox": [int(data['left'][i]), int(data['top'][i]), int(data['width'][i]), int(data['height'][i])]
+                    })
+            if len(text) > len(best_text):
+                best_text = text
+                best_tokens = tokens
         
-        # Fallback to original patterns for any missing parameters
-        fallback_params = {
-            'age': [r'([0-9]{1,3})\s*years?'],
-            'sex': [r'(male|female)'],
-            'trestbps': [r'([0-9]{2,3})\s*mmhg'],
-            'chol': [r'([0-9]{2,3})\s*mg/dl'],
-            'fbs': [r'([0-9]{2,3})\s*mg/dl.*elevated'],
-            'thalach': [r'([0-9]{2,3})\s*bpm'],
-            'cp': [r'(typical\s*angina|atypical|non-anginal|asymptomatic)'],
-            'restecg': [r'(st-t\s*abnormality|normal|lv\s*hypertrophy)'],
-            'exang': [r'(yes|no)'],
-            'oldpeak': [r'([0-9\.]+)\s*mm'],
-            'slope': [r'(flat|upsloping|downsloping)'],
-            'ca': [r'([0-4])'],
-            'thal': [r'(reversible\s*defect|fixed\s*defect|normal)']
-        }
-        
-        # Apply fallback patterns for missing parameters
-        for param, patterns in fallback_params.items():
-            if parsed_data[param] is None:
-                for pattern in patterns:
-                    match = re.search(pattern, text_lower)
-                    if match:
-                        value = match.group(1).strip()
-                        print(f"Fallback pattern found for {param}: '{value}'")
-                        
-                        # Convert using same logic as above
-                        if param == 'age':
-                            parsed_data[param] = int(value)
-                        elif param == 'sex':
-                            parsed_data[param] = 1 if 'male' in value.lower() else 0
-                        elif param in ['trestbps', 'chol', 'thalach']:
-                            parsed_data[param] = int(value)
-                        elif param == 'fbs':
-                            fbs_val = int(value)
-                            parsed_data[param] = 1 if fbs_val > 120 else 0
-                        elif param == 'cp':
-                            cp_map = {'typical angina': 0, 'atypical': 1, 'non-anginal': 2, 'asymptomatic': 3}
-                            parsed_data[param] = cp_map.get(value, 1)
-                        elif param == 'restecg':
-                            ecg_map = {'normal': 0, 'st-t abnormality': 1, 'lv hypertrophy': 2}
-                            parsed_data[param] = ecg_map.get(value, 1)
-                        elif param == 'exang':
-                            parsed_data[param] = 1 if value == 'yes' else 0
-                        elif param == 'oldpeak':
-                            parsed_data[param] = float(value)
-                        elif param == 'slope':
-                            slope_map = {'upsloping': 2, 'flat': 1, 'downsloping': 0}
-                            parsed_data[param] = slope_map.get(value, 1)
-                        elif param == 'ca':
-                            parsed_data[param] = int(value)
-                        elif param == 'thal':
-                            thal_map = {'normal': 2, 'fixed defect': 1, 'reversible defect': 3}
-                            parsed_data[param] = thal_map.get(value, 2)
-                        
-                        print(f"✓ {param}: {parsed_data[param]}")
-                        break
-        
-        # Final validation and summary
-        found = sum(1 for v in parsed_data.values() if v is not None)
-        print(f"\n=== EXTRACTION SUMMARY ===")
-        print(f"Successfully extracted: {found}/13 parameters")
-        for k, v in parsed_data.items():
-            if v is not None:
-                print(f"  ✓ {k}: {v}")
-            else:
-                print(f"  ✗ {k}: Not found")
-        print("========================\n")
-        
-        return parsed_data
+        return best_text, best_tokens
+
+    def extract_from_image(self, path):
+        processed = self.preprocess_image(path)
+        text, tokens = self.run_tesseract(processed)
+        return {"text": text, "tokens": tokens}
+
+    def extract(self, file_path):
+        ext = file_path.lower().split(".")[-1]
+        if ext == "pdf":
+            try:
+                with open(file_path, "rb") as f:
+                    pdf = PyPDF2.PdfReader(f)
+                    extracted = ""
+                    for p in pdf.pages:
+                        extracted += (p.extract_text() or "") + "\n"
+                if extracted.strip():
+                    return {"text": extracted, "tokens": []}
+            except Exception:
+                pass
+            pages = self._pdf_to_images(file_path)
+            full_text = ""
+            full_tokens = []
+            for p in pages:
+                res = self.extract_from_image(p)
+                full_text += res["text"] + "\n"
+                full_tokens += res["tokens"]
+            return {"text": full_text, "tokens": full_tokens}
+        else:
+            return self.extract_from_image(file_path)
+
+universal_ocr = UniversalOCR()
+
+
+# ----------------------- Heart report detector -----------------------
+NON_HEART_KEYWORDS = [
+    "echo", "echocardi", "2d echo", "2-d echo", "doppler", "ultrasound",
+    "echocardiogram", "semen", "semen analysis", "urine", "cbc", "complete blood count",
+    "thyroid", "x-ray", "xray", "radiology", "ct scan", "mri", "sputum", "smear",
+    "histopath", "pathology", "biopsy", "microbiology"
+]
+
+HEART_KEYWORDS = {
+    "blood pressure": 3, "bp": 2, "cholesterol": 3, "hdl":2, "ldl":2, "triglyceride":2,
+    "ecg": 3, "electrocardiogram": 3, "heart rate": 3, "bpm": 2, "angina":3,
+    "chest pain":3, "st depression":3, "st-segment":3, "thalach":3, "max heart rate":3,
+    "systolic":2, "diastolic":2, "ischemia":2, "stress test":2,
+    "age":1, "sex":1, "gender":1, "fbs":2, "fasting blood sugar":2,
+    "oldpeak":2, "slope":2, "ca":2, "thal":2
+}
+
+FIELD_PATTERNS = [
+    r"\bage[:\s]*\d{1,3}\b",
+    r"\b(age|years|yrs)\b",
+    r"\b(sex|gender)[:\s]*(male|female|m|f)\b",
+    r"\b(blood pressure|bp)[:\s]*\d{2,3}\b",
+    r"\b(cholesterol|chol)[:\s]*\d{2,3}\b",
+    r"\b(fasting .* sugar|fbs)[:\s]*\d{2,3}\b",
+    r"\b(resting ecg|ecg|electrocardiogram)\b",
+    r"\b(max heart rate|maxhr|thalach)[:\s]*\d{2,3}\b",
+    r"\b(st[-\s]*depress|oldpeak)[:\s]*[0-9.]+\b",
+]
+
+def is_heart_report(text: str, min_score: int = 1):
+    """Detect if document is a medical report. Very permissive to allow most medical documents."""
+    if not text or len(text.strip()) < 20:
+        return False, {"score": 0, "reason": "empty_or_too_short"}
+
+    t = text.lower()
     
-    def _extract_from_medical_report(self, text, parsed_data):
-        """Extract from clinical parameters table format"""
+    # Skip blacklist check for now - too restrictive
+    # Allow any document with basic medical indicators
+    
+    score = 0
+    hits = {"keywords": [], "patterns": []}
+
+    # Basic medical document indicators
+    medical_indicators = [
+        r"\b(patient|name|age|sex|male|female)\b",
+        r"\b(report|test|result|finding|impression)\b", 
+        r"\b(normal|abnormal|mg/dl|mmhg|bpm)\b",
+        r"\b\d{1,3}\s*(yrs|years|y)\b",
+        r"\b\d{2,3}\s*mg/dl\b",
+        r"\b\d{2,3}/\d{2,3}\s*mmhg\b"
+    ]
+    
+    for pattern in medical_indicators:
+        if re.search(pattern, t):
+            score += 1
+            hits["patterns"].append(pattern)
+
+    for kw, wt in HEART_KEYWORDS.items():
+        if re.search(r"\b" + re.escape(kw).replace(r"\ ", r"[\s\-]") + r"\b", t):
+            score += wt
+            hits["keywords"].append((kw, wt))
+
+    return (score >= min_score, {"score": score, "hits": hits, "min_score": min_score})
+
+
+# ----------------------- Medical parser for heart fields -----------------------
+def parse_medical_data(text: str):
+    """Enhanced parser for any medical document with flexible pattern matching."""
+    print(f"\n[PARSE] Starting parse_medical_data")
+    print(f"[PARSE] Text length: {len(text)}")
+    print(f"[PARSE] Text preview: {text[:300]}...")
+    
+    parsed = {
+        'name': None, 'age': None, 'sex': None, 'cp': None,
+        'trestbps': None, 'chol': None, 'fbs': None,
+        'restecg': None, 'thalach': None, 'exang': None,
+        'oldpeak': None, 'slope': None, 'ca': None, 'thal': None
+    }
+
+    if not text or len(text.strip()) < 20:
+        print("[PARSE] Text too short")
+        return parsed
+
+    t = text
+    tl = text.lower()
+    
+    # Extract any numeric values for fallback
+    all_numbers = re.findall(r'\b\d{1,3}\b', text)
+    print(f"[PARSE] Found numbers: {all_numbers[:10]}...")  # Show first 10
+
+    # AGE - flexible patterns
+    patterns = [
+        r'age[:\s]*([0-9]{1,3})',
+        r'([0-9]{1,3})\s*(?:yrs|years|year)',
+        r'age[/\s-]*([0-9]{1,3})',
+    ]
+    for pat in patterns:
+        m = re.search(pat, tl)
+        if m:
+            val = int(m.group(1))
+            if 18 <= val <= 100:
+                parsed['age'] = val
+                print(f"[PARSE] ✓ age -> {val}")
+                break
+
+    # SEX
+    if re.search(r'\bmale\b', tl) and not re.search(r'\bfemale\b', tl):
+        parsed['sex'] = 1
+        print(f"[PARSE] ✓ sex -> 1 (male)")
+    elif re.search(r'\bfemale\b', tl):
+        parsed['sex'] = 0
+        print(f"[PARSE] ✓ sex -> 0 (female)")
+
+    # CHEST PAIN TYPE
+    if re.search(r'typical\s*angina', tl):
+        parsed['cp'] = 0
+        print(f"[PARSE] ✓ cp -> 0 (typical angina)")
+    elif re.search(r'atypical\s*angina', tl):
+        parsed['cp'] = 1
+        print(f"[PARSE] ✓ cp -> 1 (atypical angina)")
+    elif re.search(r'non[\s-]*anginal', tl):
+        parsed['cp'] = 2
+        print(f"[PARSE] ✓ cp -> 2 (non-anginal)")
+    elif re.search(r'asymptomatic', tl):
+        parsed['cp'] = 3
+        print(f"[PARSE] ✓ cp -> 3 (asymptomatic)")
+
+    # BLOOD PRESSURE
+    m = re.search(r'(?:blood\s*pressure|bp)[:\s]*([0-9]{2,3})', tl)
+    if m:
+        parsed['trestbps'] = int(m.group(1))
+        print(f"[PARSE] ✓ trestbps -> {parsed['trestbps']}")
+
+    # CHOLESTEROL
+    m = re.search(r'cholesterol[:\s]*([0-9]{2,3})', tl)
+    if m:
+        parsed['chol'] = int(m.group(1))
+        print(f"[PARSE] ✓ chol -> {parsed['chol']}")
+
+    # FASTING BLOOD SUGAR
+    m = re.search(r'(?:fasting\s*blood\s*sugar|fbs)[:\s]*[>]?\s*([0-9]{2,3})', tl)
+    if m:
+        val = int(m.group(1))
+        parsed['fbs'] = 1 if val > 120 else 0
+        print(f"[PARSE] ✓ fbs -> {parsed['fbs']} (value: {val})")
+
+    # RESTING ECG
+    if re.search(r'resting\s*ecg[:\s]*normal', tl):
+        parsed['restecg'] = 0
+        print(f"[PARSE] ✓ restecg -> 0 (normal)")
+    elif re.search(r'(?:st[\s-]*t\s*abnormal|abnormal)', tl):
+        parsed['restecg'] = 1
+        print(f"[PARSE] ✓ restecg -> 1 (abnormal)")
+    elif re.search(r'hypertrophy', tl):
+        parsed['restecg'] = 2
+        print(f"[PARSE] ✓ restecg -> 2 (hypertrophy)")
+
+    # MAX HEART RATE
+    m = re.search(r'(?:max\s*heart\s*rate|heart\s*rate)[:\s]*([0-9]{2,3})', tl)
+    if m:
+        parsed['thalach'] = int(m.group(1))
+        print(f"[PARSE] ✓ thalach -> {parsed['thalach']}")
+
+    # EXERCISE ANGINA
+    if re.search(r'exercise\s*angina[:\s]*yes', tl):
+        parsed['exang'] = 1
+        print(f"[PARSE] ✓ exang -> 1 (yes)")
+    elif re.search(r'exercise\s*angina[:\s]*no', tl):
+        parsed['exang'] = 0
+        print(f"[PARSE] ✓ exang -> 0 (no)")
+
+    # ST DEPRESSION
+    m = re.search(r'(?:st\s*depression|oldpeak)[:\s]*([0-9]+\.?[0-9]*)', tl)
+    if m:
+        parsed['oldpeak'] = float(m.group(1))
+        print(f"[PARSE] ✓ oldpeak -> {parsed['oldpeak']}")
+
+    # ST SLOPE
+    if re.search(r'slope[:\s]*upsloping', tl):
+        parsed['slope'] = 2
+        print(f"[PARSE] ✓ slope -> 2 (upsloping)")
+    elif re.search(r'slope[:\s]*flat', tl):
+        parsed['slope'] = 1
+        print(f"[PARSE] ✓ slope -> 1 (flat)")
+    elif re.search(r'slope[:\s]*downsloping', tl):
+        parsed['slope'] = 0
+        print(f"[PARSE] ✓ slope -> 0 (downsloping)")
+
+    # MAJOR VESSELS
+    m = re.search(r'(?:major\s*vessels|vessels)[:\s]*([0-4])', tl)
+    if m:
+        parsed['ca'] = int(m.group(1))
+        print(f"[PARSE] ✓ ca -> {parsed['ca']}")
+
+    # THALASSEMIA
+    if re.search(r'thal(?:assemia)?[:\s]*normal', tl):
+        parsed['thal'] = 2
+        print(f"[PARSE] ✓ thal -> 2 (normal)")
+    elif re.search(r'thal(?:assemia)?[:\s]*fixed', tl):
+        parsed['thal'] = 1
+        print(f"[PARSE] ✓ thal -> 1 (fixed defect)")
+    elif re.search(r'thal(?:assemia)?[:\s]*reversible', tl):
+        parsed['thal'] = 3
+        print(f"[PARSE] ✓ thal -> 3 (reversible defect)")
+
+    found = sum(1 for v in parsed.values() if v is not None)
+    print(f"\n[PARSE] === FINAL RESULT: {found}/14 fields found ===")
+    print(f"[PARSE] Parsed data: {parsed}\n")
+    return parsed
+
+
+# LEGACY FALLBACK (kept for compatibility)
+def parse_medical_data_legacy(text: str):
+    parsed = {
+        'name': None, 'age': None, 'sex': None,
+        'trestbps': None, 'chol': None, 'fbs': None,
+        'restecg': None, 'thalach': None, 'exang': None,
+        'oldpeak': None, 'slope': None, 'ca': None, 'thal': None
+    }
+
+    if not text or len(text.strip()) < 20:
+        print("[PARSE] No text to parse")
+        return parsed
+
+    # --- Improved Name detection ---
+    name_patterns = [
+        r'(?:name of patient|patient name|patient[:\s\-]+)([A-Z][A-Za-z ,.\'\-]{2,80})',
+        r'\bname[:\s\-]+([A-Z][A-Za-z ,.\'\-]{2,80})',
+        r'(^[A-Z]{2,}[A-Z0-9 ,.\'\-]{2,100}$)'
+    ]
+    for pat in name_patterns:
+        m = re.search(pat, text, re.M)
+        if m:
+            candidate = m.group(1).strip()
+            candidate = re.split(r'\b(REF BY|REFBY|DATE|DOB|AGE)\b', candidate, flags=re.I)[0].strip()
+            if candidate and len(candidate) >= 2:
+                parsed['name'] = candidate
+                print(f"[PARSE] name -> {parsed['name']}")
+                break
+
+    if parsed['name'] is None:
+        m = re.search(r'NAME\s*[:\-]\s*([A-Z][A-Za-z0-9 .,\-]{2,80})', text, re.I)
+        if m:
+            candidate = m.group(1).strip()
+            candidate = re.split(r'\b(REF BY|AGE|DOB)\b', candidate, flags=re.I)[0].strip()
+            parsed['name'] = candidate
+            print(f"[PARSE] name -> {parsed['name']}")
+
+    # --- Improved Age & Sex detection ---
+    m = re.search(r'age\s*[/\-\\]\s*sex[:\s]*([0-9]{1,3})\s*(?:yrs|years)?\s*[\/\|,\-]\s*(male|female|m|f)', text, re.I)
+    if m:
+        parsed['age'] = int(m.group(1))
+        parsed['sex'] = 1 if m.group(2).lower().startswith('m') else 0
+        print(f"[PARSE] age -> {parsed['age']}")
+        print(f"[PARSE] sex -> {parsed['sex']}")
+    else:
+        m = re.search(r'\b([0-9]{1,3})\s*(?:yrs|years|y)\b', text, re.I)
+        if m and not parsed['age']:
+            age_val = int(m.group(1))
+            if 0 < age_val < 120:
+                parsed['age'] = age_val
+                print(f"[PARSE] age -> {age_val}")
+
+        if parsed['age'] is None:
+            m = re.search(r'\bage[:\s\-]*([0-9]{1,3})\b', text, re.I)
+            if m:
+                age_val = int(m.group(1))
+                if 0 < age_val < 120:
+                    parsed['age'] = age_val
+                    print(f"[PARSE] age -> {age_val}")
+
+        m = re.search(r'\b(?:sex|gender)[:\s\-]*\b(male|female|m|f)\b', text, re.I)
+        if m:
+            parsed['sex'] = 1 if m.group(1).lower().startswith('m') else 0
+            print(f"[PARSE] sex -> {parsed['sex']}")
+        else:
+            m = re.search(r'\b[0-9]{1,3}\s*(?:yrs|years)?\s*[\/\|\,]\s*(male|female|m|f)\b', text, re.I)
+            if m:
+                parsed['sex'] = 1 if m.group(1).lower().startswith('m') else 0
+                print(f"[PARSE] sex -> {parsed['sex']}")
+
+    # Blood pressure - allow systolic/diastolic "150/90 mmHg" or labeled "BP: 150"
+    m = re.search(r'\b(?:blood pressure|bp|resting blood pressure)[:\s\-]*([0-9]{2,3}(?:\s*/\s*[0-9]{2,3})?)\s*(?:mmhg)?\b', text, re.I)
+    if m:
+        bp_raw = m.group(1)
+        if "/" in bp_raw:
+            parsed['trestbps'] = int(bp_raw.split("/")[0])
+        else:
+            parsed['trestbps'] = int(re.sub(r'\D', '', bp_raw))
+        print(f"[PARSE] trestbps -> {parsed['trestbps']}")
+
+    # Cholesterol - support value with mg/dl units
+    m = re.search(r'\b(?:serum\s+)?(?:cholesterol|chol)[:\s\-]*([0-9]{2,4})\s*(?:mg\/dl|mgdl)?\b', text, re.I)
+    if m:
+        parsed['chol'] = int(m.group(1))
+        print(f"[PARSE] chol -> {parsed['chol']}")
+
+    # FBS - allow >120 or 125 mg/dl
+    m = re.search(r'(?:fasting\b.*?sugar|fbs)[:\s\-]*([<>]?\s*[0-9]{2,4})\s*(?:mg\/dl|mgdl)?', text, re.I)
+    if m:
+        val = re.sub(r'[^\d]', '', m.group(1))
+        if val:
+            parsed['fbs'] = 1 if int(val) > 120 else 0
+            print(f"[PARSE] fbs -> {parsed['fbs']}")
+
+    # Heart rate
+    m = re.search(r'(?:max heart rate|maxhr|thalach|heart rate|hr)[:\s]*([0-9]{2,3})', text, re.I)
+    if m:
+        parsed['thalach'] = int(m.group(1))
+        print(f"[PARSE] thalach -> {parsed['thalach']}")
+
+    # ECG
+    m = re.search(r'\b(ecg|resting ecg|restecg)[:\s]*(normal|abnormal|lv hypertrophy|lvh|st changes)\b', text, re.I)
+    if m:
+        val = m.group(2).lower()
+        parsed['restecg'] = 0 if 'normal' in val else 1
+        print(f"[PARSE] restecg -> {parsed['restecg']}")
+
+    # Exercise angina
+    m = re.search(r'(exercise induced angina|exercise.*angina|exang)[:\s]*(yes|no)', text, re.I)
+    if m:
+        parsed['exang'] = 1 if m.group(2).lower().startswith('y') else 0
+        print(f"[PARSE] exang -> {parsed['exang']}")
+
+    # ST depression
+    m = re.search(r'\b(?:st[-\s]*depress(?:ion)?|oldpeak)[:\s]*([0-9]+(?:\.[0-9]+)?)', text, re.I)
+    if m:
         try:
-            print("Attempting table-based extraction...")
-            
-            # Split text into lines for table parsing
-            lines = [line.strip() for line in text.split('\n') if line.strip()]
-            
-            # Look for table patterns with Parameter | Value format
-            for i, line in enumerate(lines):
-                line_lower = line.lower()
-                
-                # Age extraction - multiple patterns
-                if 'age' in line_lower:
-                    age_patterns = [r'(\d+)\s*years?', r'age.*?(\d+)', r'(\d+)']
-                    for pattern in age_patterns:
-                        match = re.search(pattern, line)
-                        if match:
-                            age_val = int(match.group(1))
-                            if 18 <= age_val <= 100:
-                                parsed_data['age'] = age_val
-                                print(f"✓ Age: {age_val}")
-                                break
-                
-                # Sex extraction
-                if 'sex' in line_lower or 'gender' in line_lower:
-                    if 'female' in line_lower:
-                        parsed_data['sex'] = 0
-                        print(f"✓ Sex: Female (0)")
-                    elif 'male' in line_lower:
-                        parsed_data['sex'] = 1
-                        print(f"✓ Sex: Male (1)")
-                
-                # Blood Pressure
-                if 'blood pressure' in line_lower or 'resting blood' in line_lower:
-                    bp_match = re.search(r'(\d{2,3})\s*mmhg', line_lower)
-                    if bp_match:
-                        parsed_data['trestbps'] = int(bp_match.group(1))
-                        print(f"✓ Blood Pressure: {parsed_data['trestbps']}")
-                
-                # Cholesterol
-                if 'cholesterol' in line_lower:
-                    chol_match = re.search(r'(\d{2,3})\s*mg', line_lower)
-                    if chol_match:
-                        parsed_data['chol'] = int(chol_match.group(1))
-                        print(f"✓ Cholesterol: {parsed_data['chol']}")
-                
-                # Fasting Blood Sugar
-                if 'fasting' in line_lower and 'sugar' in line_lower:
-                    fbs_match = re.search(r'(\d{2,3})\s*mg', line_lower)
-                    if fbs_match:
-                        fbs_val = int(fbs_match.group(1))
-                        parsed_data['fbs'] = 1 if fbs_val > 120 else 0
-                        print(f"✓ Fasting Blood Sugar: {fbs_val} -> {parsed_data['fbs']}")
-                    elif 'elevated' in line_lower:
-                        parsed_data['fbs'] = 1
-                        print(f"✓ Fasting Blood Sugar: Elevated (1)")
-                
-                # Max Heart Rate
-                if 'heart rate' in line_lower and 'max' in line_lower:
-                    hr_match = re.search(r'(\d{2,3})\s*bpm', line_lower)
-                    if hr_match:
-                        parsed_data['thalach'] = int(hr_match.group(1))
-                        print(f"✓ Max Heart Rate: {parsed_data['thalach']}")
-                
-                # Chest Pain Type
-                if 'chest pain' in line_lower or 'pain type' in line_lower:
-                    if 'typical angina' in line_lower:
-                        parsed_data['cp'] = 0
-                        print(f"✓ Chest Pain: Typical Angina (0)")
-                    elif 'atypical angina' in line_lower:
-                        parsed_data['cp'] = 1
-                        print(f"✓ Chest Pain: Atypical Angina (1)")
-                    elif 'non-anginal' in line_lower:
-                        parsed_data['cp'] = 2
-                        print(f"✓ Chest Pain: Non-anginal (2)")
-                    elif 'asymptomatic' in line_lower:
-                        parsed_data['cp'] = 3
-                        print(f"✓ Chest Pain: Asymptomatic (3)")
-                
-                # Resting ECG
-                if 'resting ecg' in line_lower or 'ecg result' in line_lower:
-                    if 'normal' in line_lower:
-                        parsed_data['restecg'] = 0
-                        print(f"✓ Resting ECG: Normal (0)")
-                    elif 'st-t abnormality' in line_lower or 'abnormality' in line_lower:
-                        parsed_data['restecg'] = 1
-                        print(f"✓ Resting ECG: ST-T Abnormality (1)")
-                    elif 'hypertrophy' in line_lower:
-                        parsed_data['restecg'] = 2
-                        print(f"✓ Resting ECG: LV Hypertrophy (2)")
-                
-                # Exercise Induced Angina
-                if 'exercise' in line_lower and 'angina' in line_lower:
-                    if 'yes' in line_lower:
-                        parsed_data['exang'] = 1
-                        print(f"✓ Exercise Angina: Yes (1)")
-                    elif 'no' in line_lower:
-                        parsed_data['exang'] = 0
-                        print(f"✓ Exercise Angina: No (0)")
-                
-                # ST Depression
-                if 'st depression' in line_lower:
-                    st_match = re.search(r'([0-9\.]+)\s*mm', line_lower)
-                    if st_match:
-                        parsed_data['oldpeak'] = float(st_match.group(1))
-                        print(f"✓ ST Depression: {parsed_data['oldpeak']}")
-                
-                # Slope of ST
-                if 'slope' in line_lower:
-                    if 'upsloping' in line_lower:
-                        parsed_data['slope'] = 2
-                        print(f"✓ ST Slope: Upsloping (2)")
-                    elif 'flat' in line_lower:
-                        parsed_data['slope'] = 1
-                        print(f"✓ ST Slope: Flat (1)")
-                    elif 'downsloping' in line_lower:
-                        parsed_data['slope'] = 0
-                        print(f"✓ ST Slope: Downsloping (0)")
-                
-                # Major Vessels
-                if 'major vessels' in line_lower or 'fluoroscopy' in line_lower:
-                    vessels_match = re.search(r'([0-4])', line)
-                    if vessels_match:
-                        parsed_data['ca'] = int(vessels_match.group(1))
-                        print(f"✓ Major Vessels: {parsed_data['ca']}")
-                
-                # Thalassemia
-                if 'thalassemia' in line_lower:
-                    if 'normal' in line_lower:
-                        parsed_data['thal'] = 2
-                        print(f"✓ Thalassemia: Normal (2)")
-                    elif 'fixed defect' in line_lower:
-                        parsed_data['thal'] = 1
-                        print(f"✓ Thalassemia: Fixed Defect (1)")
-                    elif 'reversible defect' in line_lower:
-                        parsed_data['thal'] = 3
-                        print(f"✓ Thalassemia: Reversible Defect (3)")
-            
-            extracted_count = sum(1 for v in parsed_data.values() if v is not None)
-            print(f"Table extraction found {extracted_count}/13 parameters")
-            return extracted_count > 0
-            
-        except Exception as e:
-            print(f"Table extraction error: {e}")
-            return False
-    
-    def _extract_structured_data(self, text):
-        """Extract data from structured clinical documents"""
-        try:
-            # This method tries to extract from well-formatted clinical documents
-            # Look for structured data patterns
-            lines = text.split('\n')
-            extracted = {}
-            
-            for line in lines:
-                line = line.strip().lower()
-                if not line:
-                    continue
-                
-                # Try to match structured patterns
-                if 'age' in line and 'years' in line:
-                    age_match = re.search(r'(\d+)\s*years?', line)
-                    if age_match:
-                        extracted['age'] = int(age_match.group(1))
-                
-                if 'blood pressure' in line and 'mmhg' in line:
-                    bp_match = re.search(r'(\d+)\s*mmhg', line)
-                    if bp_match:
-                        extracted['trestbps'] = int(bp_match.group(1))
-                
-                # Add more structured extraction patterns as needed
-            
-            if len(extracted) >= 3:  # If we found at least 3 parameters
-                print(f"Structured extraction found {len(extracted)} parameters")
-                return extracted
-            
-            return None
-            
-        except Exception as e:
-            print(f"Structured extraction failed: {e}")
-            return None
-    
-    def create_ocr_result(self, text, parsed_data, confidence=0.8):
-        """Create structured OCR result"""
+            parsed['oldpeak'] = float(m.group(1))
+            print(f"[PARSE] oldpeak -> {parsed['oldpeak']}")
+        except:
+            pass
+
+    # slope
+    m = re.search(r'\bslope[:\s]*(upsloping|flat|downsloping|up|flat|down)\b', text, re.I)
+    if m:
+        sval = m.group(1).lower()
+        mapping = {'upsloping':2,'up':2,'flat':1,'downsloping':0,'down':0}
+        parsed['slope'] = mapping.get(sval, None)
+        if parsed['slope'] is not None:
+            print(f"[PARSE] slope -> {parsed['slope']}")
+
+    # ca
+    m = re.search(r'\b(?:major vessels|vessels|ca)[:\s]*([0-4])\b', text, re.I)
+    if m:
+        parsed['ca'] = int(m.group(1))
+        print(f"[PARSE] ca -> {parsed['ca']}")
+
+    # thalassemia
+    m = re.search(r'\b(thalassemia|thal)[:\s]*(normal|fixed|reversible|[0-9])\b', text, re.I)
+    if m:
+        val = m.group(2).lower()
+        thmap = {'normal':2,'fixed':1,'reversible':3}
+        parsed['thal'] = thmap.get(val, int(val) if val.isdigit() else None)
+        if parsed['thal'] is not None:
+            print(f"[PARSE] thal -> {parsed['thal']}")
+
+    # --- FALLBACK PATTERNS ---
+    if parsed['trestbps'] is None:
+        m = re.search(r'\b(bp|blood pressure)[:\s\-]*([0-9]{2,3})(?:/([0-9]{2,3}))?\s*(?:mmhg)?\b', text, re.I)
+        if m:
+            parsed['trestbps'] = int(m.group(2))
+            print(f"[PARSE] trestbps fallback -> {parsed['trestbps']}")
+
+    if parsed['chol'] is None:
+        m = re.search(r'\b(cholesterol|chol)[:\s\-]*([0-9]{2,3})\s*(?:mg/dl)?\b', text, re.I)
+        if m:
+            parsed['chol'] = int(m.group(2))
+            print(f"[PARSE] chol fallback -> {parsed['chol']}")
+
+    if parsed['fbs'] is None:
+        m = re.search(r'\b(?:fasting blood sugar|fasting .* sugar|fbs)[:\s\-]*([<>]?\s*[0-9]{2,3})', text, re.I)
+        if m:
+            token = m.group(1).replace(' ', '')
+            num = int(re.sub(r'[^0-9]', '', token))
+            parsed['fbs'] = 1 if num > 120 else 0
+            print(f"[PARSE] fbs fallback -> {parsed['fbs']} (raw:{token})")
+
+    found = sum(1 for v in parsed.values() if v is not None)
+    print(f"[PARSE] fields found: {found}/{len(parsed)}")
+    return parsed
+
+
+# ----------------------- Prediction helper -----------------------
+MODEL_PATH = os.path.join("data", "raw", "model_assets", "final_risk_model.joblib")
+PIPELINE_PATH = os.path.join("data", "raw", "model_assets", "full_prediction_pipeline.joblib")
+_loaded_model = None
+_loaded_pipeline = None
+try:
+    if os.path.exists(MODEL_PATH):
+        _loaded_model = joblib.load(MODEL_PATH)
+    if os.path.exists(PIPELINE_PATH):
+        _loaded_pipeline = joblib.load(PIPELINE_PATH)
+except Exception:
+    _loaded_model = None
+    _loaded_pipeline = None
+
+def heuristic_risk(parsed):
+    score = 0.0
+    age = parsed.get('age') or 0
+    if age >= 65: score += 2
+    elif age >= 50: score += 1
+    bp = parsed.get('trestbps') or 0
+    if bp >= 160: score += 2
+    elif bp >= 140: score += 1
+    chol = parsed.get('chol') or 0
+    if chol >= 280: score += 2
+    elif chol >= 240: score += 1
+    fbs = parsed.get('fbs')
+    if fbs == 1: score += 1
+    th = parsed.get('thalach') or 0
+    if th < 50 or th > 180: score += 1
+    oldp = parsed.get('oldpeak')
+    if oldp is not None:
+        if oldp >= 2: score += 2
+        elif oldp >= 1: score += 1
+    if parsed.get('exang') == 1: score += 2
+    ca = parsed.get('ca')
+    if ca is not None:
+        if ca >= 2: score += 2
+        elif ca == 1: score += 1
+    thal = parsed.get('thal')
+    if thal in (1,3): score += 1
+
+    if score >= 6:
+        return {"risk": "HIGH", "confidence": min(0.9, 0.5 + score*0.05)}
+    if score >= 3:
+        return {"risk": "MODERATE", "confidence": min(0.85, 0.35 + score*0.08)}
+    return {"risk": "LOW", "confidence": min(0.8, 0.55 + score*0.05)}
+
+def predict_from_parsed(parsed):
+    try:
+        if _loaded_pipeline is not None:
+            import pandas as pd
+            df = pd.DataFrame([parsed])
+            preds = _loaded_pipeline.predict_proba(df) if hasattr(_loaded_pipeline, "predict_proba") else None
+            if preds is not None:
+                p = float(preds[0][1])
+                label = "HIGH" if p > 0.66 else ("MODERATE" if p > 0.35 else "LOW")
+                return {"risk": label, "confidence": p}
+            pred = _loaded_pipeline.predict(df)
+            label = pred[0] if isinstance(pred, (list, np.ndarray)) else pred
+            return {"risk": str(label).upper(), "confidence": 0.75}
+        if _loaded_model is not None:
+            import pandas as pd
+            df = pd.DataFrame([parsed])
+            prob = _loaded_model.predict_proba(df) if hasattr(_loaded_model, "predict_proba") else None
+            if prob is not None:
+                p = float(prob[0][1])
+                label = "HIGH" if p > 0.66 else ("MODERATE" if p > 0.35 else "LOW")
+                return {"risk": label, "confidence": p}
+            pred = _loaded_model.predict(df)
+            label = pred[0] if isinstance(pred, (list, np.ndarray)) else pred
+            return {"risk": str(label).upper(), "confidence": 0.7}
+    except Exception:
+        pass
+    return heuristic_risk(parsed)
+
+
+# ----------------------- Convenience wrapper used by views -----------------------
+DEBUG_DIR = os.path.join(UPLOAD_DIR, "debug")
+os.makedirs(DEBUG_DIR, exist_ok=True)
+
+def ocr_and_predict(file_path):
+    ocr_result = universal_ocr.extract(file_path)
+    text = ocr_result.get("text", "") or ""
+    tokens = ocr_result.get("tokens", [])
+
+    is_heart, diag = is_heart_report(text, min_score=4)
+    if not is_heart:
         return {
-            'extracted_text': text,
-            'parsed_data': parsed_data,
-            'confidence': confidence,
-            'processed_at': datetime.utcnow().isoformat(),
-            'word_count': len(text.split()) if text else 0
+            "ok": False,
+            "error": "not_heart_report",
+            "diagnostic": diag,
+            "text": text,
+            "tokens": tokens
         }
 
-# Global instance
-ocr_service = OCRService()
+    parsed = parse_medical_data(text)
+    prediction = predict_from_parsed(parsed)
+    return {
+        "ok": True,
+        "text": text,
+        "tokens": tokens,
+        "parsed": parsed,
+        "prediction": prediction,
+        "processed_at": datetime.utcnow().isoformat()
+    }
+
+def ocr_and_predict_debug(file_path, save_debug=True):
+    import json
+    try:
+        ocr_result = universal_ocr.extract(file_path)
+    except Exception as e:
+        return {"ok": False, "stage": "ocr", "error": f"ocr_exception: {repr(e)}"}
+
+    text = ocr_result.get("text", "") or ""
+    tokens = ocr_result.get("tokens", [])
+
+    timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+    base = os.path.basename(file_path)
+    debug_prefix = f"{timestamp}__{base}"
+    if save_debug:
+        try:
+            open(os.path.join(DEBUG_DIR, debug_prefix + ".ocr.txt"), "w", encoding="utf8").write(text)
+            open(os.path.join(DEBUG_DIR, debug_prefix + ".tokens.json"), "w", encoding="utf8").write(json.dumps(tokens, ensure_ascii=False, indent=2))
+        except Exception:
+            pass
+
+    try:
+        is_heart, diag = is_heart_report(text, min_score=1)
+    except Exception as e:
+        return {"ok": False, "stage": "detector", "error": f"detector_exception: {repr(e)}", "text_preview": text[:400]}
+
+    if not is_heart:
+        if save_debug:
+            open(os.path.join(DEBUG_DIR, debug_prefix + ".diag.json"), "w", encoding="utf8").write(json.dumps(diag, ensure_ascii=False, indent=2))
+        return {
+            "ok": False,
+            "stage": "rejected_not_heart",
+            "error": "not_heart_report",
+            "diagnostic": diag,
+            "text_preview": text[:1000]
+        }
+
+    try:
+        parsed = parse_medical_data(text)
+    except Exception as e:
+        return {"ok": False, "stage": "parse", "error": f"parse_exception: {repr(e)}", "text_preview": text[:1000]}
+
+    # Always proceed with prediction even if few fields extracted
+    non_null = sum(1 for v in parsed.values() if v is not None)
+    print(f"[DEBUG] Extracted {non_null} fields from document")
+
+    if save_debug:
+        open(os.path.join(DEBUG_DIR, debug_prefix + ".parsed.json"), "w", encoding="utf8").write(json.dumps(parsed, ensure_ascii=False, indent=2))
+
+    try:
+        prediction = predict_from_parsed(parsed)
+    except Exception as e:
+        prediction = {"error": f"prediction_exception: {repr(e)}"}
+
+    if save_debug:
+        open(os.path.join(DEBUG_DIR, debug_prefix + ".prediction.json"), "w", encoding="utf8").write(json.dumps(prediction, ensure_ascii=False, indent=2))
+
+    return {
+        "ok": True,
+        "stage": "success",
+        "source": "live",
+        "text_preview": text[:2000],
+        "ocr_len": len(text),
+        "diagnostic": diag,
+        "parsed": parsed,
+        "parsed_count": non_null,
+        "prediction": prediction,
+        "debug_files_prefix": debug_prefix
+    }

@@ -1,0 +1,24 @@
+ADD AI TOOLS TO DASHBOARD
+==========================
+
+Open: frontend/index.html
+
+Find line 636 (after "Manage account" text)
+
+Look for the closing tags:
+                                    </div>
+                                </div>
+
+RIGHT AFTER those closing tags, ADD THIS:
+
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;" onclick="window.open('ai-health-tools.html', '_blank')" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 35px rgba(16, 185, 129, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);">
+                                            <i class="fas fa-robot" style="font-size: 1.5rem; color: white;"></i>
+                                        </div>
+                                        <h5 style="color: #831843; margin-bottom: 0.5rem; font-weight: 600;">AI Tools</h5>
+                                        <p style="color: #9d174d; margin: 0; font-size: 0.9rem;">Smart health assistant</p>
+                                    </div>
+                                </div>
+
+SAVE and refresh!

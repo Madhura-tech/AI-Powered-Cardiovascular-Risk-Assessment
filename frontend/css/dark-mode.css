@@ -1,0 +1,86 @@
+/* Dark Mode Styles */
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+    color: #e0e0e0 !important;
+}
+
+.dark-mode .sidebar {
+    background: #1a1a2e !important;
+    border-right: 1px solid #2d2d44 !important;
+}
+
+.dark-mode .sidebar-link {
+    color: #e0e0e0 !important;
+}
+
+.dark-mode .sidebar-link:hover,
+.dark-mode .sidebar-link.active {
+    background: rgba(236, 72, 153, 0.2) !important;
+}
+
+.dark-mode #welcome,
+.dark-mode .content-section {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+}
+
+.dark-mode .professional-card,
+.dark-mode .card,
+.dark-mode .detail-card {
+    background: rgba(26, 26, 46, 0.8) !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+    color: #e0e0e0 !important;
+}
+
+.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6,
+.dark-mode p, .dark-mode span, .dark-mode label, .dark-mode .form-label {
+    color: #e0e0e0 !important;
+}
+
+.dark-mode .form-control, .dark-mode .form-select {
+    background: rgba(26, 26, 46, 0.9) !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+    color: #e0e0e0 !important;
+}
+
+.dark-mode .hero-subtitle,
+.dark-mode .professional-subtitle {
+    color: #b0b0b0 !important;
+}
+
+.dark-mode .feature-card,
+.dark-mode .step-card {
+    background: rgba(26, 26, 46, 0.6) !important;
+    border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+.dark-mode .modal-content {
+    background: rgba(26, 26, 46, 0.95) !important;
+    color: #e0e0e0 !important;
+}
+
+.dark-mode #chatbot-window {
+    background: #1a1a2e !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+.dark-mode #chatbot-header {
+    background: linear-gradient(135deg, #ec4899, #be185d) !important;
+}
+
+.dark-mode #chatbot-messages {
+    background: #16213e !important;
+}
+
+.dark-mode .chat-message.bot {
+    background: rgba(236, 72, 153, 0.2) !important;
+}
+
+.dark-mode .chat-message.user {
+    background: rgba(99, 102, 241, 0.2) !important;
+}
+
+.dark-mode #chat-message {
+    background: rgba(26, 26, 46, 0.9) !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+    color: #e0e0e0 !important;
+}

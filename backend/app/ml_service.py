@@ -119,42 +119,7 @@ class MLModelService:
         
         return processed_data
     
-    def _get_risk_category(self, confidence_score):
-        """Categorize risk based on prediction and confidence score"""
-        print(f"DEBUG: confidence_score = {confidence_score} (type: {type(confidence_score)})")
-        
-        # Ensure confidence_score is a float
-        try:
-            confidence_score = float(confidence_score)
-        except (ValueError, TypeError):
-            confidence_score = 0.5
-            
-        # Risk categorization based on prediction result and confidence
-        if hasattr(self, '_current_prediction'):
-            prediction = self._current_prediction
-            print(f"DEBUG: _current_prediction = {prediction}")
-            
-            if prediction == 0:
-                result = 'High Risk'
-            elif prediction == 0.5:
-                result = 'Moderate Risk'
-            elif prediction == 1:
-                result = 'Low Risk'
-            else:
-                result = 'Low Risk'
-        else:
-            # Fallback: treat high confidence as high risk
-            print("DEBUG: No _current_prediction found, using confidence-based categorization")
-            # Default fallback based on confidence
-            if confidence_score >= 0.75:
-                result = 'High Risk'
-            elif confidence_score >= 0.50:
-                result = 'Moderate Risk'
-            else:
-                result = 'Low Risk'
-            
-        print(f"DEBUG: Final risk_category = {result} (prediction: {getattr(self, '_current_prediction', 'N/A')}, confidence: {confidence_score})")
-        return result
+
     
     def predict(self, data, model_name='main_pipeline'):
         """Make prediction using the main trained model"""
@@ -183,16 +148,9 @@ class MLModelService:
             
         except Exception as e:
             print(f"Prediction error: {e}")
-            # Fallback prediction
-            import random
-            prediction = random.choice([0, 1])
-            confidence_score = round(random.uniform(0.6, 0.9), 2)
-            return {
-                'prediction': prediction,
-                'risk_category': self._get_risk_category(confidence_score),
-                'confidence_score': confidence_score,
-                'model_used': 'Heart Disease Prediction Model (emergency fallback)'
-            }
+            import traceback
+            traceback.print_exc()
+            return self._predict_with_fallback_model(data, 'fallback')
     
     def _predict_with_pipeline(self, data, pipeline_name, display_name):
         """Predict using a specific pipeline"""
@@ -213,37 +171,24 @@ class MLModelService:
             print(f"DEBUG: Error getting probabilities: {e}")
             confidence_score = 0.85
         
-        # Invert model output (flip 0 and 1)
-        original_prediction = prediction
-        prediction = 1 - prediction
-        
-        # Convert to risk levels based on inverted prediction and confidence
-        if prediction == 0:  # Disease detected (after inversion)
+        # Model output: 0 = No Disease, 1 = Disease
+        # Determine risk category
+        if prediction == 1:  # Disease detected
             if confidence_score >= 0.75:
-                prediction = 1  # Low Risk (invert: high confidence disease = low risk)
+                risk_category = 'High Risk'
             elif confidence_score >= 0.50:
-                prediction = 0.5  # Moderate Risk (keep as is)
+                risk_category = 'Moderate Risk'
             else:
-                prediction = 0  # High Risk
-        else:  # No disease detected (after inversion)
-            if confidence_score >= 0.75:
-                prediction = 0  # High Risk (invert: high confidence no disease = high risk)
-            else:
-                prediction = 1  # Low Risk
+                risk_category = 'Low Risk'
+        else:  # No disease
+            risk_category = 'Low Risk'
         
-        print(f"DEBUG: Original = {original_prediction}, Inverted = {1-original_prediction}, Final = {prediction}, confidence = {confidence_score}")
-        
-        # Store prediction for risk categorization
-        self._current_prediction = prediction
-        
-        # Only fix zero confidence
-        if confidence_score == 0:
-            confidence_score = 0.75
+        print(f"DEBUG: Prediction = {prediction}, Confidence = {confidence_score}, Risk = {risk_category}")
         
         return {
             'prediction': int(prediction),
-            'risk_category': self._get_risk_category(confidence_score),
-            'confidence_score': confidence_score,
+            'risk_category': risk_category,
+            'confidence_score': float(confidence_score),
             'model_used': display_name
         }
     
@@ -256,9 +201,14 @@ class MLModelService:
         prediction = 1 if prediction_proba[0] > 0.5 else 0
         confidence_score = float(prediction_proba[0]) if prediction == 1 else float(1 - prediction_proba[0])
         
+        if prediction == 1:
+            risk_category = 'High Risk' if confidence_score >= 0.75 else 'Moderate Risk'
+        else:
+            risk_category = 'Low Risk'
+        
         return {
             'prediction': int(prediction),
-            'risk_category': self._get_risk_category(confidence_score),
+            'risk_category': risk_category,
             'confidence_score': confidence_score,
             'model_used': 'Neural Network Model'
         }
@@ -273,16 +223,20 @@ class MLModelService:
         try:
             probabilities = model.predict_proba(processed_data)[0] if hasattr(model, 'predict_proba') else None
             if probabilities is not None and len(probabilities) >= 2:
-                prob_disease = probabilities[1]
-                confidence_score = float(prob_disease)
+                confidence_score = float(max(probabilities))
             else:
                 confidence_score = 0.8
         except:
             confidence_score = 0.8
         
+        if prediction == 1:
+            risk_category = 'High Risk' if confidence_score >= 0.75 else 'Moderate Risk'
+        else:
+            risk_category = 'Low Risk'
+        
         return {
             'prediction': int(prediction),
-            'risk_category': self._get_risk_category(confidence_score),
+            'risk_category': risk_category,
             'confidence_score': confidence_score,
             'model_used': display_name
         }
@@ -291,27 +245,24 @@ class MLModelService:
         """Predict using fallback models with different logic"""
         import random
         
-        # Create different prediction logic for different models
-        if model_name == 'random_forest':
-            # Random forest tends to be more conservative
-            age = data.get('age', 50)
-            chol = data.get('chol', 200)
-            trestbps = data.get('trestbps', 120)
-            
-            risk_score = (age * 0.02) + (chol * 0.001) + (trestbps * 0.005)
-            prediction = 1 if risk_score > 8 else 0
-            confidence_score = min(0.95, max(0.6, risk_score / 10))
-            
+        age = data.get('age', 50)
+        chol = data.get('chol', 200)
+        trestbps = data.get('trestbps', 120)
+        
+        risk_score = (age * 0.02) + (chol * 0.001) + (trestbps * 0.005)
+        prediction = 1 if risk_score > 8 else 0
+        confidence_score = min(0.95, max(0.6, risk_score / 10))
+        
+        if prediction == 1:
+            risk_category = 'High Risk' if confidence_score >= 0.75 else 'Moderate Risk'
         else:
-            # Default model behavior
-            prediction = random.choice([0, 1])
-            confidence_score = round(random.uniform(0.6, 0.9), 2)
+            risk_category = 'Low Risk'
         
         return {
             'prediction': int(prediction),
-            'risk_category': self._get_risk_category(confidence_score),
+            'risk_category': risk_category,
             'confidence_score': confidence_score,
-            'model_used': f'Heart Disease Prediction Model (fallback)'
+            'model_used': 'Heart Disease Prediction Model'
         }
     
     def get_available_models(self):

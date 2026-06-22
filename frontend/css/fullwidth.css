@@ -1,7 +1,7 @@
 /* Full Width Layout Styles */
 .no-sidebar {
     margin-left: 0 !important;
-    width: 100vw !important;
+    width: 100% !important;
 }
 
 .fullwidth-container {
@@ -11,6 +11,6 @@
 }
 
 .content-section.fullwidth {
-    width: 100vw;
+    width: 100%;
     margin-left: 0;
 }

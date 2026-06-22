@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Analytics Test</h1>
+    <div id="status"></div>
+    <canvas id="testChart" width="400" height="200"></canvas>
+    
+    <script>
+    const token = localStorage.getItem('authToken');
+    const status = document.getElementById('status');
+    
+    if (!token) {
+        status.innerHTML = '<p style="color:red">No auth token found. Please login first.</p>';
+    } else {
+        status.innerHTML = '<p>Loading...</p>';
+        
+        fetch('http://127.0.0.1:5000/api/analytics/history-charts', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(r => r.json())
+        .then(data => {
+            status.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            
+            if (data.risk_gauge) {
+                new Chart(document.getElementById('testChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Low', 'Moderate', 'High'],
+                        datasets: [{
+                            data: [data.prediction_distribution.low, data.prediction_distribution.moderate, data.prediction_distribution.high],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                        }]
+                    }
+                });
+            }
+        })
+        .catch(err => {
+            status.innerHTML = '<p style="color:red">Error: ' + err.message + '</p>';
+        });
+    }
+    </script>
+</body>
+</html>

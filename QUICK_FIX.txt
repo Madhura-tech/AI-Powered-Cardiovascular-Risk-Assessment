@@ -1,0 +1,61 @@
+QUICK FIX FOR ANALYTICS CHARTS
+================================
+
+Open frontend/index.html
+
+Find line 1960 (end of analytics section, after the last </div>)
+
+ADD THIS SCRIPT RIGHT AFTER:
+
+<script>
+setTimeout(function() {
+    const orig = window.navigateTo;
+    window.navigateTo = function(id) {
+        const res = orig(id);
+        if (id === 'analytics') {
+            setTimeout(function() {
+                const token = localStorage.getItem('authToken');
+                if (!token) return;
+                
+                fetch('http://127.0.0.1:5000/api/predictions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    const p = data.predictions || [];
+                    if (p.length === 0) return;
+                    
+                    const latest = p[p.length - 1];
+                    const risk = (latest.confidence_score || 0.5) * 100;
+                    
+                    new Chart(document.getElementById('riskGaugeChart'), {
+                        type: 'doughnut',
+                        data: { datasets: [{ data: [risk, 100-risk], backgroundColor: ['#ec4899', '#f3f4f6'] }] },
+                        options: { circumference: 180, rotation: 270, cutout: '75%', plugins: { legend: { display: false } } }
+                    });
+                    
+                    new Chart(document.getElementById('radarChart'), {
+                        type: 'radar',
+                        data: { labels: ['Age', 'BP', 'Chol', 'HR', 'BS'], datasets: [{ data: [50, 60, 50, 75, 40], backgroundColor: 'rgba(236,72,153,0.2)', borderColor: '#ec4899' }] },
+                        options: { scales: { r: { beginAtZero: true, max: 100 } } }
+                    });
+                    
+                    new Chart(document.getElementById('trendChart'), {
+                        type: 'line',
+                        data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ label: 'BP', data: [120,118,122,119,121], borderColor: '#ec4899' }] }
+                    });
+                    
+                    new Chart(document.getElementById('predictionBarChart'), {
+                        type: 'bar',
+                        data: { labels: ['Low','Moderate','High'], datasets: [{ data: [5,3,2], backgroundColor: ['#10b981','#f59e0b','#ef4444'] }] },
+                        options: { plugins: { legend: { display: false } } }
+                    });
+                });
+            }, 200);
+        }
+        return res;
+    };
+}, 1000);
+</script>
+
+SAVE and refresh browser (Ctrl+F5)
